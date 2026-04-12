@@ -1,0 +1,21 @@
+
+# but ignore big files inside Py
+*.pkl
+*.pptx
+*.txt
+*.nii*
+*.gii
+*.png
+*.zip
+*.html
+Py/__pycache__/
+*.pyc
+
+# allow .gitignore itself
+!.gitignore
+!fname.html	
+	
+# git add .
+# git commit -m "Your commit message"
+# git push
+

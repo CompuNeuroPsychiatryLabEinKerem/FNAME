@@ -1,0 +1,87 @@
+DATA:
+    Folder: images
+    Name_Sets:
+        A: 
+            F: Linda, Peggy, Susan, Joyce, Karen, Dawn
+            M: John, Henry, Ed, Gene, Sam, Bruce
+        B: 
+            F: Diane, Carol, Patricia, Sarah, Ruth, Beverly
+            M: Steven, Harry, Thomas, Barry, George, Charles
+        C: 
+            F: Janet, Melanie, Laurie, Kathy, Anna, Barb
+            M: Walter, Carl, Arthur, Phil, Ray, Daniel
+    Name_Triplets:
+        Linda: Linda, Susan, Lena 
+        Peggy: Peggy, Karen, Michelle
+        Susan: Susan, Joyce, Jenny
+        Joyce: Joyce, Peggy, Cheryl
+        Karen: Karen, Dawn, Judy
+        Dawn: Dawn, Linda, Joanne
+        John: John, Ed, Don
+        Henry: Henry, John, Jerry
+        Ed: Ed, Bruce, Tim
+        Gene: Gene, Henry, Jeff
+        Sam: Sam, Gene, Howard
+        Bruce: Bruce, Sam, Allen
+        Diane: Diane, Ruth, Donna
+        Carol: Carol, Diane, Anne
+        Patricia: Patricia, Sarah, Dorothy
+        Sarah: Sarah, Carol, Helen
+        Ruth: Ruth, Beverly, Liz
+        Beverly: Beverly, Patricia, Lois
+        Steven: Steven, Thomas, Brian
+        Harry: Harry, George, Gerry
+        Thomas: Thomas, Harry, Bob
+        Barry: Barry, Steven, Neil
+        George: George, Charles, Donald
+        Charles: Charles, Barry, Rob
+        Janet: Janet, Kathy, Jessica
+        Melanie: Melanie, Janet, Dorene
+        Laurie: Laurie, Melanie, Gloria
+        Kathy: Kathy, Barb, Margaret
+        Anna: Anna, Laurie, Christine
+        Barb: Barb, Anna, Phyllis
+        Walter: Walter, Ray, Roger
+        Carl: Carl, Walter, greg
+        Arthur: Arthur, Phil, Ronnie
+        Phil: Phil, Carl, Will
+        Ray: Ray, Daniel, Harry
+        Daniel: Daniel, Arthur, Mark
+    Image_File_Names: 
+        Correct: NAME_1.jpeg
+        Wrong1: NAME_2.jpeg
+        Wrong2: NAME_3.jpeg
+        
+INSTRUCTIONS:
+    Learning:
+      - You will be shown a series of <Num_Of_Stimuli> face**–**name pairs. Each time, you will be shown a single face together with its name. After <Time_Per_Stimulus_Learning> seconds, the image will be replaced by a slider on which you will be asked to rate how well the name fits the face.
+    Recall:
+      - Now you will be presented each time with a face and three names. Your task is to select the correct name from the three. You will have <Time_Per_Stimulus_Recall> seconds for each trial and <Num_Of_Stimuli> trials overall. 
+    Break:
+      - Now we'd like to have a break. Choose one of the following topics for a video to watch.
+    Delayed_Recall:    
+      - "Hello again! This time, you will be presented with a set of three faces and asked three questions: (1) Which of the faces have you previously seen? (<Time_IsFamiliar> seconds) (2) What is the first letter of their name? (<Time_1stLetter> seconds) (3) What is the full first name as shown in the learning phase? (<Time_FullName> seconds)."
+
+Videos:
+    Chess: https://www.youtube.com/watch?v=nqbWy1A1QQI
+    NBA: https://www.youtube.com/watch?v=aMaCDEoc2DM
+
+CONFIG:
+    Stimuli:
+        Name_Set: A
+        Num_Of_Stimuli: 8
+    Learning_Phase:
+        Num_Learning_Rounds: 2
+        Time_Per_Stimulus_Learning: 8
+        Time_Per_Stimulus_Recall: 10
+    DelayedRecall_Phase:
+        Num_Rounds: 2
+        Time_IsFamiliar: 6
+        Time_1stLetter: 6
+        Time_FullName: 6
+    Show_Stats: True
+    Keyboard:
+        Options: Querty, ThreeLines, OneLine
+        Selected: Querty
+    ShowSkipStage: True
+    
