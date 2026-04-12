@@ -13,7 +13,7 @@ Py/__pycache__/
 
 # allow .gitignore itself
 !.gitignore
-!fname.html	
+!index.html	
 	
 # git add .
 # git commit -m "Your commit message"
