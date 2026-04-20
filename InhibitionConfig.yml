@@ -1,0 +1,36 @@
+Animals:
+  Folder: Animals
+  Images:
+    - Bear.jpg
+    - Chick.jpg
+    - Dear.jpg
+    - Duck.jpg
+    - Frog.jpg
+    - Giraffe.jpg
+    - Goat.jpg
+    - Lamb.jpg
+    - Lion.jpg
+    - Monkey.jpg
+    - Sheep.jpg
+    - Turtle.jpg
+    - Wolf.jpg
+    - Zebra.jpg
+
+Trial:
+  Duration: 1500            # ms — trial ends on spacebar or after this
+  SameProbability: 0.30     # probability the two cards show the same animal
+  FaceDownProbability: 0.20 # probability one card is rotated 180° (upside-down)
+  JitterPosition: 30        # px — cards are offset ± this value from their nominal center
+  JitterAngle: 20           # degrees — cards are tilted ± this value
+
+InterTrial:
+  Duration: 200             # ms — neutral ITI (no feedback shown)
+  FeedbackDuration: 300     # ms — ITI when V or X is displayed
+
+Game:
+  Duration: 60000           # ms — total session length
+
+Display:
+  ScoreAreaHeight: 80       # px reserved at the top for the score bar
+  CardWidth: 250            # px
+  CardHeight: 300           # px

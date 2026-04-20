@@ -89,34 +89,34 @@ CONFIG:
     
 PRESETS: 
     Standard: 
-        Name_Set: RANDOM
+        Name_Set: A
         Num_Of_Stimuli: 12
         Num_Learning_Rounds: 2
-        Time_Per_Stimulus_Learning: 10
-        Time_Per_Stimulus_Recall: 10
+        Time_Per_Stimulus_Learning: 8
+        Time_Per_Stimulus_Recall: 8
         Num_DelayedRecall_Rounds: 2
         Time_IsFamiliar: 6
         Time_1stLetter: 6
         Time_FullName: 6
-    Shorter: 
-        Name_Set: RANDOM
-        Num_Of_Stimuli: 10
+    advanced: 
+        Name_Set: A
+        Num_Of_Stimuli: 12
         Num_Learning_Rounds: 2
-        Time_Per_Stimulus_Learning: 8
-        Time_Per_Stimulus_Recall: 6
+        Time_Per_Stimulus_Learning: 5
+        Time_Per_Stimulus_Recall: 5
         Num_DelayedRecall_Rounds: 2
         Time_IsFamiliar: 6
         Time_1stLetter: 6
         Time_FullName: 6
     Shortest: 
-        Name_Set: RANDOM
+        Name_Set: A
         Num_Of_Stimuli: 8
         Num_Learning_Rounds: 2
-        Time_Per_Stimulus_Learning: 6
-        Time_Per_Stimulus_Recall: 6
+        Time_Per_Stimulus_Learning: 4
+        Time_Per_Stimulus_Recall: 5
         Num_DelayedRecall_Rounds: 2
         Time_IsFamiliar: 6
-        Time_1stLetter: 6
+        Time_1stLetter: 0
         Time_FullName: 6
         
         

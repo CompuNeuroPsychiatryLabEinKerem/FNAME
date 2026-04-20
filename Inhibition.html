@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inhibition Task</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000; color: #fff;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      overflow: hidden; width: 100vw; height: 100vh; user-select: none;
+    }
+
+    /* ── Score bar ─────────────────────────────────────────────── */
+    #score-bar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: var(--score-height, 80px);
+      background: #111; border-bottom: 1px solid #222;
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 20px; z-index: 100;
+    }
+    #game-title {
+      font-size: 12px; letter-spacing: 3px; color: #444;
+      text-transform: uppercase; flex-shrink: 0;
+    }
+    #score-block { flex-shrink: 0; text-align: center; }
+    #score-label { font-size: 10px; letter-spacing: 1px; color: #666; text-transform: uppercase; }
+    #score-value { font-size: 38px; font-weight: 700; line-height: 1.1; color: #fff; }
+    #score-value.dim { color: #444; }
+    #sparkline-wrap { flex: 1; display: flex; align-items: center; justify-content: flex-end; }
+    #sparkline { display: block; }
+
+    /* ── Time bar ──────────────────────────────────────────────── */
+    #time-bar-track {
+      position: fixed;
+      top: var(--score-height, 80px); left: 0; right: 0;
+      height: 8px; background: #1c1c1c; z-index: 100;
+    }
+    #time-bar {
+      height: 100%; width: 100%;
+      /* gradient: green when full (right side visible), red when almost gone */
+      background: linear-gradient(to right, #cc2222, #e08820, #1a9a50);
+      transform-origin: left center;
+    }
+
+    /* ── Game area ─────────────────────────────────────────────── */
+    #game-area {
+      position: fixed;
+      top: calc(var(--score-height, 80px) + 8px);
+      left: 0; right: 0; bottom: 0;
+      background: #000;
+    }
+
+    /* ── Cards ─────────────────────────────────────────────────── */
+    .card {
+      position: absolute; border-radius: 12px;
+      background: #fff; border: 3px solid #ccc;
+      box-shadow: 0 8px 28px rgba(0,0,0,.8);
+      overflow: hidden; display: none;
+    }
+    .card img { width: 100%; height: 100%; object-fit: fill; display: block; }
+
+    /* ── ITI overlay ───────────────────────────────────────────── */
+    #iti-overlay {
+      position: fixed;
+      top: calc(var(--score-height, 80px) + 8px);
+      left: 0; right: 0; bottom: 0;
+      background: #000; display: none; z-index: 150;
+    }
+
+    /* ── Feedback symbol ───────────────────────────────────────── */
+    #feedback {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 320px; font-weight: 900; line-height: 1;
+      display: none; z-index: 200; pointer-events: none;
+      -webkit-text-stroke: 10px currentColor; paint-order: stroke fill;
+    }
+
+    /* ── Full-screen panels ────────────────────────────────────── */
+    .panel {
+      position: fixed; inset: 0; background: #000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 400;
+    }
+    .panel h1 {
+      font-size: 42px; letter-spacing: 4px;
+      text-transform: uppercase; margin-bottom: 28px;
+    }
+    .info-box {
+      max-width: 520px; background: #111; border: 1px solid #2a2a2a;
+      border-radius: 12px; padding: 24px 32px;
+      line-height: 1.8; font-size: 17px; color: #bbb;
+    }
+    .info-box strong { color: #fff; }
+    .key {
+      display: inline-block; background: #222; border: 2px solid #555;
+      border-radius: 6px; padding: 1px 10px;
+      font-family: monospace; font-size: 15px; color: #fff;
+    }
+    .btn {
+      margin-top: 28px; padding: 13px 48px; font-size: 19px;
+      color: #fff; border: none; border-radius: 8px;
+      cursor: pointer; letter-spacing: 2px; text-transform: uppercase;
+    }
+    .btn:disabled { background: #2a2a2a !important; color: #555; cursor: default; }
+    #start-btn  { background: #1a8a4a; }
+    #start-btn:not(:disabled):hover { background: #22aa5a; }
+    #restart-btn { background: #1a4a8a; }
+    #restart-btn:hover { background: #2260bb; }
+
+    /* End screen specifics */
+    #end-score-big {
+      font-size: 80px; font-weight: 700; color: #f0d060;
+      margin: 10px 0 2px; line-height: 1;
+    }
+    #end-hz-label { font-size: 13px; color: #777; letter-spacing: 2px; margin-bottom: 20px; }
+    #end-details  { font-size: 15px; color: #888; margin-top: 14px; text-align: center; }
+    #end-details strong { color: #ccc; }
+  </style>
+</head>
+<body>
+
+<!-- Score bar -->
+<div id="score-bar">
+  <span id="game-title">Inhibition</span>
+  <div id="score-block">
+    <div id="score-label">Score (Hz)</div>
+    <div id="score-value" class="dim">—</div>
+  </div>
+  <div id="sparkline-wrap">
+    <canvas id="sparkline" width="240" height="54"></canvas>
+  </div>
+</div>
+
+<!-- Time bar -->
+<div id="time-bar-track"><div id="time-bar"></div></div>
+
+<!-- Game area -->
+<div id="game-area">
+  <div id="card-left"  class="card"><img id="img-left"  src="" alt=""></div>
+  <div id="card-right" class="card"><img id="img-right" src="" alt=""></div>
+</div>
+
+<!-- Black ITI screen -->
+<div id="iti-overlay"></div>
+<!-- Feedback symbol -->
+<div id="feedback"></div>
+
+<!-- ── Start screen ──────────────────────────────────────────── -->
+<div id="start-screen" class="panel">
+  <h1>Inhibition Task</h1>
+  <div class="info-box">
+    <p>Two animal cards appear side by side.</p><br>
+    <p>Press <span class="key">SPACE</span> only when both cards show the
+       <strong>same animal</strong> and both are <strong>right-side up</strong>.</p><br>
+    <p>Each trial lasts <strong>1.5 s</strong>. The session lasts <strong>60 s</strong>.</p><br>
+    <p><strong>Beware of pairs showing the same animal with one card sneakily flipped upside down — they are <em>almost</em> right... but only almost. Mwahahaha.</strong></p>
+  </div>
+  <button id="start-btn" class="btn">Start</button>
+</div>
+
+<!-- ── End screen ───────────────────────────────────────────── -->
+<div id="end-screen" class="panel" style="display:none">
+  <h1>Time's Up!</h1>
+  <div id="end-score-big">—</div>
+  <div id="end-hz-label">Hz &nbsp;(= 1 / T*)</div>
+  <div class="info-box" style="min-width:340px; text-align:center">
+    <div id="end-details"></div>
+  </div>
+  <button id="restart-btn" class="btn">Play Again</button>
+</div>
+
+<script>
+// ── Default config (mirrors InhibitionConfig.yml) ──────────────────────────
+const DEFAULT_CONFIG = {
+  Animals: {
+    Folder: 'Animals',
+    Images: ['Bear.jpg','Chick.jpg','Dear.jpg','Duck.jpg','Frog.jpg',
+             'Giraffe.jpg','Goat.jpg','Lamb.jpg','Lion.jpg','Monkey.jpg',
+             'Sheep.jpg','Turtle.jpg','Wolf.jpg','Zebra.jpg']
+  },
+  Trial: {
+    Duration: 1500,
+    SameProbability: 0.30,
+    FaceDownProbability: 0.20,
+    JitterPosition: 30,
+    JitterAngle: 20
+  },
+  InterTrial: { Duration: 200, FeedbackDuration: 300 },
+  Game: { Duration: 60000 },
+  Display: { ScoreAreaHeight: 80, CardWidth: 250, CardHeight: 300 }
+};
+
+let cfg = DEFAULT_CONFIG;
+let processedImages = {};
+
+// ── Game state ─────────────────────────────────────────────────────────────
+let gameRunning    = false;
+let trialTimer     = null;
+let gameEndTimer   = null;
+let currentTrial   = null;
+let responded      = false;
+let trialStartTime = 0;
+let gameStartTime  = 0;
+
+// Scoring state
+let pile         = 0;   // cards on the table right now
+let lostCards    = 0;   // A: definite losses (misses + false alarms)
+let hitsList     = [];  // B: [{cards, rt}] — potential wins
+let scoreHistory = [];  // [{elapsed, score}] for sparkline
+
+// ── DOM refs ───────────────────────────────────────────────────────────────
+const cardLeft   = document.getElementById('card-left');
+const cardRight  = document.getElementById('card-right');
+const imgLeft    = document.getElementById('img-left');
+const imgRight   = document.getElementById('img-right');
+const itiOverlay = document.getElementById('iti-overlay');
+const feedbackEl = document.getElementById('feedback');
+const scoreVal   = document.getElementById('score-value');
+const timeBarEl  = document.getElementById('time-bar');
+const sparkCvs   = document.getElementById('sparkline');
+const sparkCtx   = sparkCvs.getContext('2d');
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const rand = (lo, hi) => lo + Math.random() * (hi - lo);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+// ── Score computation ──────────────────────────────────────────────────────
+// Find T* (ms) such that, against a perfect opponent with RT = T*, cards won = cards lost.
+// Score displayed = 1000 / T* (Hz).
+function computeTstar() {
+  if (hitsList.length === 0) return null;
+
+  // If no losses at all, any T works → use the fastest hit RT as T*
+  if (lostCards === 0) return Math.min(...hitsList.map(h => h.rt));
+
+  // Sort hits by ascending RT and check if total wins can cover losses
+  const sorted = [...hitsList].sort((a, b) => a.rt - b.rt);
+  const totalWins = sorted.reduce((s, h) => s + h.cards, 0);
+  if (totalWins < lostCards) return null;  // can't break even
+
+  // Interpolate the exact RT at which cumulative wins crosses lostCards
+  let cum = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    const prev = cum;
+    cum += sorted[i].cards;
+    if (cum >= lostCards) {
+      const frac  = (lostCards - prev) / sorted[i].cards;
+      const rtLow = i === 0 ? 0 : sorted[i - 1].rt;
+      return rtLow + frac * (sorted[i].rt - rtLow);
+    }
+  }
+  return null;
+}
+
+function computeScore() {
+  const Tstar = computeTstar();
+  return (Tstar !== null && Tstar > 0) ? 1000 / Tstar : null;
+}
+
+// ── Sparkline ──────────────────────────────────────────────────────────────
+function drawSparkline() {
+  const W = sparkCvs.width, H = sparkCvs.height;
+  sparkCtx.clearRect(0, 0, W, H);
+
+  const pts = scoreHistory.filter(p => p.score !== null);
+  if (pts.length < 2) return;
+
+  const gameDur  = cfg.Game.Duration;
+  const maxScore = Math.max(...pts.map(p => p.score), 0.01);
+
+  // Faint baseline
+  sparkCtx.strokeStyle = '#2a2a2a';
+  sparkCtx.lineWidth   = 1;
+  sparkCtx.beginPath();
+  sparkCtx.moveTo(0, H - 1); sparkCtx.lineTo(W, H - 1);
+  sparkCtx.stroke();
+
+  // Score line
+  sparkCtx.strokeStyle = '#f0d060';
+  sparkCtx.lineWidth   = 2.5;
+  sparkCtx.lineJoin    = 'round';
+  sparkCtx.lineCap     = 'round';
+  sparkCtx.beginPath();
+  pts.forEach((p, i) => {
+    const x = (p.elapsed / gameDur) * W;
+    const y = H - 4 - (p.score / maxScore) * (H - 8);
+    i === 0 ? sparkCtx.moveTo(x, y) : sparkCtx.lineTo(x, y);
+  });
+  sparkCtx.stroke();
+}
+
+function updateScoreDisplay() {
+  const elapsed = Date.now() - gameStartTime;
+  const s = computeScore();
+  scoreHistory.push({ elapsed, score: s });
+
+  if (s !== null) {
+    scoreVal.textContent = s.toFixed(2);
+    scoreVal.className   = '';
+  } else {
+    scoreVal.textContent = '—';
+    scoreVal.className   = 'dim';
+  }
+  drawSparkline();
+}
+
+// ── Time bar (rAF loop) ────────────────────────────────────────────────────
+let timeBarRaf = null;
+function tickTimeBar() {
+  const frac = Math.max(0, 1 - (Date.now() - gameStartTime) / cfg.Game.Duration);
+  timeBarEl.style.transform = `scaleX(${frac})`;
+  if (frac > 0 && gameRunning) timeBarRaf = requestAnimationFrame(tickTimeBar);
+}
+
+// ── Image preprocessing ────────────────────────────────────────────────────
+async function preprocessImages() {
+  const { Images, Folder } = cfg.Animals;
+  const loaded = await Promise.all(Images.map(name => new Promise(resolve => {
+    const img = new Image();
+    img.onload  = () => resolve({ name, img });
+    img.onerror = () => resolve({ name, img: null });
+    img.src = `${Folder}/${name}`;
+  })));
+
+  const valid = loaded.filter(l => l.img);
+  const maxW = Math.max(...valid.map(l => l.img.naturalWidth));
+  const maxH = Math.max(...valid.map(l => l.img.naturalHeight));
+
+  // Scale card size to match padded image aspect ratio
+  const scale = Math.min(cfg.Display.CardWidth / maxW, cfg.Display.CardHeight / maxH);
+  cfg.Display.CardWidth  = Math.round(maxW * scale);
+  cfg.Display.CardHeight = Math.round(maxH * scale);
+
+  const cvs = document.createElement('canvas');
+  cvs.width = maxW; cvs.height = maxH;
+  const ctx = cvs.getContext('2d');
+
+  for (const { name, img } of loaded) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, maxW, maxH);
+    if (img) ctx.drawImage(img,
+      Math.round((maxW - img.naturalWidth)  / 2),
+      Math.round((maxH - img.naturalHeight) / 2));
+    processedImages[name] = cvs.toDataURL('image/jpeg', 0.95);
+  }
+}
+
+// ── Trial generation ───────────────────────────────────────────────────────
+function generateTrial() {
+  const images = cfg.Animals.Images;
+  const same = Math.random() < cfg.Trial.SameProbability;
+  let img1, img2;
+  if (same) { img1 = img2 = pick(images); }
+  else      { img1 = pick(images); img2 = pick(images.filter(i => i !== img1)); }
+
+  let flip1 = false, flip2 = false;
+  if (Math.random() < cfg.Trial.FaceDownProbability)
+    Math.random() < 0.5 ? (flip1 = true) : (flip2 = true);
+
+  return { img1, img2, flip1, flip2, isTarget: same && !flip1 && !flip2 };
+}
+
+// ── Card placement ─────────────────────────────────────────────────────────
+function placeCard(el, imgEl, imgFile, side, flipped) {
+  const area = document.getElementById('game-area');
+  const aw = area.clientWidth, ah = area.clientHeight;
+  const cw = cfg.Display.CardWidth,  ch = cfg.Display.CardHeight;
+  const jp = cfg.Trial.JitterPosition, ja = cfg.Trial.JitterAngle;
+
+  const cx = side === 'left' ? aw * 0.33 : aw * 0.67;
+  const cy = ah * 0.50;
+  const baseAngle = rand(-ja, ja);
+
+  el.style.width     = cw + 'px';
+  el.style.height    = ch + 'px';
+  el.style.left      = (cx + rand(-jp, jp) - cw / 2) + 'px';
+  el.style.top       = (cy + rand(-jp, jp) - ch / 2) + 'px';
+  el.style.transform = `rotate(${flipped ? baseAngle + 180 : baseAngle}deg)`;
+  imgEl.src          = processedImages[imgFile] || `${cfg.Animals.Folder}/${imgFile}`;
+  el.style.display   = 'block';
+}
+
+// ── Trial flow ─────────────────────────────────────────────────────────────
+function startTrial() {
+  responded      = false;
+  currentTrial   = generateTrial();
+  pile          += 1;
+  trialStartTime = Date.now();
+
+  placeCard(cardLeft,  imgLeft,  currentTrial.img1, 'left',  currentTrial.flip1);
+  placeCard(cardRight, imgRight, currentTrial.img2, 'right', currentTrial.flip2);
+
+  trialTimer = setTimeout(() => { if (!responded) endTrial(false); }, cfg.Trial.Duration);
+}
+
+function endTrial(spacePressed) {
+  clearTimeout(trialTimer); trialTimer = null;
+  cardLeft.style.display = cardRight.style.display = 'none';
+
+  const rt = Date.now() - trialStartTime;
+  let feedback = null;
+
+  if (spacePressed) {
+    if (currentTrial.isTarget) { hitsList.push({ cards: pile, rt }); pile = 0; feedback = 'correct'; }
+    else                       { lostCards += pile;                  pile = 0; feedback = 'wrong';   }
+  } else {
+    if (currentTrial.isTarget) { lostCards += pile; pile = 0; feedback = 'wrong'; }
+    // correct rejection: pile stays, no feedback
+  }
+
+  updateScoreDisplay();
+  showITI(feedback);
+}
+
+function showITI(feedback) {
+  itiOverlay.style.display = 'block';
+
+  if (feedback === 'correct') {
+    feedbackEl.textContent = 'V'; feedbackEl.style.color = '#00dd55';
+    feedbackEl.style.display = 'block';
+  } else if (feedback === 'wrong') {
+    feedbackEl.textContent = 'X'; feedbackEl.style.color = '#ee2222';
+    feedbackEl.style.display = 'block';
+  }
+
+  const dur = feedback ? cfg.InterTrial.FeedbackDuration : cfg.InterTrial.Duration;
+  setTimeout(() => {
+    itiOverlay.style.display = feedbackEl.style.display = 'none';
+    if (gameRunning) startTrial();
+  }, dur);
+}
+
+// ── Game end ───────────────────────────────────────────────────────────────
+function endGame() {
+  gameRunning = false;
+  clearTimeout(trialTimer);
+  cancelAnimationFrame(timeBarRaf);
+  timeBarEl.style.transform = 'scaleX(0)';
+  cardLeft.style.display = cardRight.style.display = 'none';
+  itiOverlay.style.display = feedbackEl.style.display = 'none';
+
+  const finalScore = computeScore();
+  const Tstar      = computeTstar();
+
+  document.getElementById('end-score-big').textContent =
+    finalScore !== null ? finalScore.toFixed(2) : '—';
+
+  const hitCount = hitsList.length;
+  const missFA   = lostCards;
+  const Tstr     = Tstar !== null ? Tstar.toFixed(0) + ' ms' : 'N/A';
+  document.getElementById('end-details').innerHTML =
+    `Hits: <strong>${hitCount}</strong> &nbsp;·&nbsp; ` +
+    `Cards lost (miss + FA): <strong>${missFA}</strong> &nbsp;·&nbsp; ` +
+    `T* = <strong>${Tstr}</strong>`;
+
+  document.getElementById('end-screen').style.display = 'flex';
+
+  // Notify parent page (when running embedded in an iframe)
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'inhibitionDone', score: finalScore }, '*');
+  }
+}
+
+// ── Input ──────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.code !== 'Space') return;
+  e.preventDefault();
+  if (!gameRunning || responded) return;
+  responded = true;
+  endTrial(true);
+});
+
+// ── Start / restart ────────────────────────────────────────────────────────
+function startGame() {
+  pile = 0; lostCards = 0; hitsList = []; scoreHistory = [];
+  scoreVal.textContent = '—'; scoreVal.className = 'dim';
+  sparkCtx.clearRect(0, 0, sparkCvs.width, sparkCvs.height);
+  timeBarEl.style.transform = 'scaleX(1)';
+
+  gameRunning   = true;
+  gameStartTime = Date.now();
+
+  tickTimeBar();
+  gameEndTimer = setTimeout(endGame, cfg.Game.Duration);
+  startTrial();
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('start-screen').style.display = 'none';
+  startGame();
+});
+document.getElementById('restart-btn').addEventListener('click', () => {
+  document.getElementById('end-screen').style.display = 'none';
+  startGame();
+});
+
+// ── Apply config to CSS variables ──────────────────────────────────────────
+function applyCfg() {
+  document.documentElement.style.setProperty('--score-height', cfg.Display.ScoreAreaHeight + 'px');
+  document.getElementById('score-bar').style.height = cfg.Display.ScoreAreaHeight + 'px';
+}
+
+// ── Load config + preprocess images ───────────────────────────────────────
+async function init() {
+  try {
+    const res = await fetch('InhibitionConfig.yml');
+    if (!res.ok) throw new Error();
+    if (typeof jsyaml !== 'undefined') cfg = jsyaml.load(await res.text());
+  } catch (_) { console.info('Using built-in default config.'); }
+
+  applyCfg();
+
+  const btn = document.getElementById('start-btn');
+  btn.disabled = true; btn.textContent = 'Loading images…';
+  await preprocessImages();
+
+  if (new URLSearchParams(window.location.search).get('autostart') !== null) {
+    document.getElementById('start-screen').style.display = 'none';
+    startGame();
+  } else {
+    btn.disabled = false; btn.textContent = 'Start';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
