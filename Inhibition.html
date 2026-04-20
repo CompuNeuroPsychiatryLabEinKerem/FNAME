@@ -78,6 +78,16 @@
       -webkit-text-stroke: 10px currentColor; paint-order: stroke fill;
     }
 
+    /* ── Countdown ─────────────────────────────────────────────── */
+    #countdown {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 160px; font-weight: 900; line-height: 1;
+      display: none; z-index: 300; pointer-events: none;
+      text-shadow: 0 0 60px currentColor;
+      transition: opacity 0.15s;
+    }
+
     /* ── Full-screen panels ────────────────────────────────────── */
     .panel {
       position: fixed; inset: 0; background: #000;
@@ -93,7 +103,7 @@
       border-radius: 12px; padding: 24px 32px;
       line-height: 1.8; font-size: 17px; color: #bbb;
     }
-    .info-box strong { color: #fff; }
+    .info-box strong { color: #ff9966; }
     .key {
       display: inline-block; background: #222; border: 2px solid #555;
       border-radius: 6px; padding: 1px 10px;
@@ -124,7 +134,7 @@
 
 <!-- Score bar -->
 <div id="score-bar">
-  <span id="game-title">Inhibition</span>
+  <span id="game-title">Card Game</span>
   <div id="score-block">
     <div id="score-label">Score (Hz)</div>
     <div id="score-value" class="dim">—</div>
@@ -143,6 +153,9 @@
   <div id="card-right" class="card"><img id="img-right" src="" alt=""></div>
 </div>
 
+<!-- Countdown overlay -->
+<div id="countdown"></div>
+
 <!-- Black ITI screen -->
 <div id="iti-overlay"></div>
 <!-- Feedback symbol -->
@@ -150,7 +163,7 @@
 
 <!-- ── Start screen ──────────────────────────────────────────── -->
 <div id="start-screen" class="panel">
-  <h1>Inhibition Task</h1>
+  <h1>Quick Reaction Card Game</h1>
   <div class="info-box">
     <p>Two animal cards appear side by side.</p><br>
     <p>Press <span class="key">SPACE</span> only when both cards show the
@@ -473,6 +486,26 @@ document.addEventListener('keydown', e => {
   endTrial(true);
 });
 
+// ── Ready-Set-Go countdown ─────────────────────────────────────────────────
+function showCountdown(callback) {
+  const el = document.getElementById('countdown');
+  const steps = [
+    { text: 'Ready', color: '#ff9944' },
+    { text: 'Set',   color: '#ffdd44' },
+    { text: 'Go!',   color: '#44dd88' },
+  ];
+  let i = 0;
+  function next() {
+    if (i >= steps.length) { el.style.display = 'none'; callback(); return; }
+    const s = steps[i++];
+    el.textContent = s.text;
+    el.style.color = s.color;
+    el.style.display = 'block';
+    setTimeout(next, i < steps.length ? 800 : 500);
+  }
+  next();
+}
+
 // ── Start / restart ────────────────────────────────────────────────────────
 function startGame() {
   pile = 0; lostCards = 0; hitsList = []; scoreHistory = [];
@@ -485,7 +518,7 @@ function startGame() {
 
   tickTimeBar();
   gameEndTimer = setTimeout(endGame, cfg.Game.Duration);
-  startTrial();
+  showCountdown(startTrial);
 }
 
 document.getElementById('start-btn').addEventListener('click', () => {

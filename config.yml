@@ -59,6 +59,8 @@ INSTRUCTIONS:
       - Now you will be presented each time with a face and three names. Your task is to select the correct name from the three. You will have <Time_Per_Stimulus_Recall> seconds for each trial and <Num_Of_Stimuli> trials overall. 
     Break:
       - Time for a short break! You'll play a word-guessing game. The computer picks a secret word. Ask questions by entering two words — the computer tells you which one is semantically closer to the secret. You can also buy a hint. You start with 20 points; each question costs 1, each wrong guess 3, each hint 5. Points run out and the answer is revealed. Good luck!
+    Inhibition_Break:
+      - "Before the next phase, we'll play a quick card game — two short rounds. Instructions will follow on the next screen."
     Delayed_Recall:    
       - "Hello again! This time, you will be presented with a set of three faces and asked three questions: (1) Which of the faces have you previously seen? (<Time_IsFamiliar> seconds) (2) What is the first letter of their name? (<Time_1stLetter> seconds) (3) What is the full first name as shown in the learning phase? (<Time_FullName> seconds)."
 

@@ -84,6 +84,9 @@ function buildCFG(y, presetName) {
   // Break instruction + word game config
   const rawBreak = y.INSTRUCTIONS && y.INSTRUCTIONS.Break;
   const breakInstruction = Array.isArray(rawBreak) ? rawBreak[0] : (rawBreak || '');
+  const rawInhibBreak = y.INSTRUCTIONS && y.INSTRUCTIONS.Inhibition_Break;
+  const inhibitionBreakIntro = Array.isArray(rawInhibBreak) ? rawInhibBreak[0]
+    : (rawInhibBreak || 'Before the next phase, we\'ll play a quick card game — two short rounds. Instructions will follow on the next screen.');
   const bg = (co.Break_Game) || {};
   const gameRounds         = bg.Num_Rounds        ?? 2;
   const gameStartScore     = bg.Start_Score       ?? 20;
@@ -136,6 +139,7 @@ function buildCFG(y, presetName) {
     showSkipStage:    co.ShowSkipStage,
     keyboard:         co.Keyboard.Selected,
     breakInstruction,
+    inhibitionBreakIntro,
     gameRounds,
     gameStartScore,
     gameQuestionCost,
@@ -551,7 +555,7 @@ function blurAfter(trial, ms) {
               <p style="font-size:14px;color:#888;letter-spacing:1px;margin-bottom:28px;">
                 SCORE (1 / T*)
               </p>
-              <p style="font-size:20px;color:#ccc;line-height:1.7;max-width:460px;margin:0 auto 32px;">
+              <p style="font-size:20px;color:#1a3f7a;font-weight:600;line-height:1.7;max-width:460px;margin:0 auto 32px;">
                 Can you beat your own score?<br>
                 Take a few deep breaths — we're going for another one!
               </p>
@@ -900,12 +904,11 @@ function blurAfter(trial, ms) {
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `
-      <h2>Break — Animal Card Game</h2>
+      <h2>Break — Card Game</h2>
       <p style="font-size:18px;max-width:520px;margin:0 auto 24px;line-height:1.6;">
-        Time for a short break! You'll play <b>2 quick rounds</b>
-        of an animal card-matching game. Each round lasts 60 seconds.
+        ${CFG.inhibitionBreakIntro}
       </p>
-      <p style="color:#888;margin-top:28px;">Press any key to start Round 1.</p>
+      <p style="color:#888;margin-top:28px;">Press any key to continue.</p>
     `,
     data: { phase: 'inhibition_break', screen: 'instructions' }
   });
@@ -954,12 +957,14 @@ function blurAfter(trial, ms) {
       const q1 = d.filter({ question: 'Q1_familiar',     correct: true }).count();
       const q2 = d.filter({ question: 'Q2_first_letter', correct: true }).count();
       const q3 = d.filter({ question: 'Q3_full_name',    correct: true }).count();
+      const q2Row = CFG.dr1stLetterMs > 0
+        ? `<tr><td>First letter:</td><td><b>${q2} / ${n}</b></td></tr>` : '';
       return `
         <h2>Task Complete!</h2>
         <h3 style="margin-top:20px;">Delayed Recall Summary</h3>
         <table style="margin:auto;font-size:20px;border-spacing:28px 10px;">
           <tr><td>Familiar face:</td><td><b>${q1} / ${n}</b></td></tr>
-          <tr><td>First letter:</td> <td><b>${q2} / ${n}</b></td></tr>
+          ${q2Row}
           <tr><td>Full name:</td>    <td><b>${q3} / ${n}</b></td></tr>
         </table>
         <p style="color:#888;margin-top:28px;">Press any key to save results as CSV.</p>
