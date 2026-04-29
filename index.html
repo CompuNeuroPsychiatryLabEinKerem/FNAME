@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.3"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css">
   <style>
@@ -253,9 +254,9 @@ function blurAfter(trial, ms) {
   }
 
   // ── 2. jsPsych init ─────────────────────────────────────────────────
-  const jsPsych = initJsPsych({
-    on_finish: () => jsPsych.data.get().localSave('csv', 'fname_results.csv')
-  });
+  //const jsPsych = initJsPsych({
+  //  on_finish: () => jsPsych.data.get().localSave('csv', 'fname_results.csv')});
+	const jsPsych = initJsPsych({ on_finish: () => {} });
 
   // Write resolved config to every row of CSV output
   jsPsych.data.addProperties({
@@ -971,6 +972,18 @@ function blurAfter(trial, ms) {
       `;
     }
   });
+
+  // ── DataPipe save ────────────────────────────────────────────────────
+  timeline.push({
+	type: jsPsychPipe,
+	action: "save",
+	experiment_id: "MBiQMvsLAVF1",   // ← replace with your actual Pipe ID
+	filename: () => `fname_${jsPsych.randomization.randomID(8)}.csv`,
+	data_string: () => jsPsych.data.get().csv()
+  });
+
+  // keep local download as fallback
+  jsPsych.data.get().localSave('csv', 'fname_results.csv');
 
   // ── 8. Run ──────────────────────────────────────────────────────────
   jsPsych.run(timeline);
