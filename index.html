@@ -7,6 +7,7 @@
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.3"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.3"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
   <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe@0.4.0/dist/index.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -900,6 +901,54 @@ function blurAfter(trial, ms) {
       });
     }
   }
+
+  // Demographic/Questionnaire Stage
+  timeline.push({
+    type: jsPsychSurveyHtmlForm,
+    preamble: '<h3>Before we continue, please provide some background information:</h3>',
+    html: `
+      <div style="text-align: left; max-width: 400px; margin: 0 auto;">
+        <p>
+          <label><b>Email:</b><br>
+          <input type="email" name="email" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;"></label>
+        </p>
+        <p>
+          <label><b>Age:</b><br>
+          <input type="number" name="age" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;"></label>
+        </p>
+        <p>
+          <label><b>Gender:</b><br>
+          <select name="gender" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="" disabled selected>Select</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other/Prefer not to say</option>
+          </select></label>
+        </p>
+        <p>
+          <label><b>Years of Education:</b><br>
+          <input type="number" name="education_years" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;"></label>
+        </p>
+        <p style="margin-top: 20px; border: 1px solid #eee; padding: 12px; border-radius: 6px; background: #fdfdfd;">
+          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+            <input type="checkbox" name="memory_decline" style="width: 20px; height: 20px; margin-top: 2px;">
+            <span>Check this box if you have <b>recently felt a decline in your memory</b>.</span>
+          </label>
+        </p>
+      </div>
+    `,
+    button_label: 'Continue',
+    on_finish: function(data) {
+      // Saving to all subsequent and past CSV rows for easy analysis
+      jsPsych.data.addProperties({
+        email: data.response.email,
+        age: data.response.age,
+        gender: data.response.gender,
+        education_years: data.response.education_years,
+        memory_decline: data.response.memory_decline ? true : false
+      });
+    }
+  });
 
   // Break – inhibition game (intro + 2 rounds with score screens)
   timeline.push({
