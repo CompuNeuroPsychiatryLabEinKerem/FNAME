@@ -88,7 +88,7 @@ function buildCFG(y, presetName) {
   const breakInstruction = Array.isArray(rawBreak) ? rawBreak[0] : (rawBreak || '');
   const rawInhibBreak = y.INSTRUCTIONS && y.INSTRUCTIONS.Inhibition_Break;
   const inhibitionBreakIntro = Array.isArray(rawInhibBreak) ? rawInhibBreak[0]
-    : (rawInhibBreak || 'Before the next phase, we\'ll play a quick card game — two short rounds. Instructions will follow on the next screen.');
+    : (rawInhibBreak || 'Before the next phase, we\'ll play a quick card game — two short rounds. Instructions will follow on the next screen.<br><span dir="rtl" style="font-size:0.9em;color:#555;">לפני השלב הבא, נשחק משחק קלפים מהיר — שני סיבובים קצרים. הוראות יופיעו במסך הבא.</span>');
   const bg = (co.Break_Game) || {};
   const gameRounds         = bg.Num_Rounds        ?? 2;
   const gameStartScore     = bg.Start_Score       ?? 20;
@@ -961,6 +961,17 @@ function blurAfter(trial, ms) {
           <label><b>Years of Education:</b> <span dir="rtl" style="font-size:0.9em;color:#555;">(שנות השכלה)</span><br>
           <input type="number" name="education_years" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;"></label>
         </p>
+        <p>
+          <label><b>English Fluency:</b> <span dir="rtl" style="font-size:0.9em;color:#555;">(רמת אנגלית)</span><br>
+          <select name="english_fluency" required style="width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="" disabled selected>Select / בחרו</option>
+            <option value="1">1 - Basic (Yes/No) / בסיסית (כן/לא)</option>
+            <option value="2">2 - Poor / חלשה</option>
+            <option value="3">3 - Intermediate / בינונית</option>
+            <option value="4">4 - Advanced / טובה מאוד</option>
+            <option value="5">5 - Native or Fluent / שפת אם או שוטפת</option>
+          </select></label>
+        </p>
         <p style="margin-top: 20px; border: 1px solid #eee; padding: 12px; border-radius: 6px; background: #fdfdfd;">
           <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
             <input type="checkbox" name="memory_decline" style="width: 20px; height: 20px; margin-top: 2px;">
@@ -978,6 +989,7 @@ function blurAfter(trial, ms) {
         age: data.response.age,
         gender: data.response.gender,
         education_years: data.response.education_years,
+        english_fluency: data.response.english_fluency,
         memory_decline: data.response.memory_decline ? true : false
       });
     }
