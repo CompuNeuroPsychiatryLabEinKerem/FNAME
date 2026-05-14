@@ -908,7 +908,7 @@ function blurAfter(trial, ms) {
               <span dir="rtl" style="font-size:0.9em;color:#555;">תראו פנים ו<b>שלוש אפשרויות בחירה</b>.</span><br>
               Select the correct name
               (${CFG.numStimuli} trials).<br>
-              <span dir="rtl" style="font-size:0.9em;color:#555;">ביחרו את השם הנכון (${CFG.numStimuli} צעדים).</span></p>
+              <span dir="rtl" style="font-size:0.9em;color:#555;">ביחרו את השם הנכון (${CFG.numStimuli} גירויים).</span></p>
            <p style="color:#888;">Press any key to begin.<br><span dir="rtl">לחצו על מקש כלשהו כדי להתחיל.</span></p>`
         : `<p>Recall – Round <b>${r}</b> of ${CFG.nLearningRounds}.<br><span dir="rtl" style="font-size:0.9em;color:#555;">היזכרות – סיבוב <b>${r}</b> מתוך ${CFG.nLearningRounds}.</span></p>
            <p style="color:#888;">Press any key to continue.<br><span dir="rtl">לחצו על מקש כלשהו כדי להמשיך.</span></p>`
@@ -987,11 +987,11 @@ function blurAfter(trial, ms) {
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `
-      <h2>Break — Card Game</h2>
+      <h2>Break — Card Game <br><span dir="rtl" style="font-size:0.85em;color:#444;">הפסקה — משחק קלפים</span></h2>
       <p style="font-size:18px;max-width:520px;margin:0 auto 24px;line-height:1.6;">
         ${CFG.inhibitionBreakIntro}
       </p>
-      <p style="color:#888;margin-top:28px;">Press any key to continue.</p>
+      <p style="color:#888;margin-top:28px;">Press any key to continue.<br><span dir="rtl">לחצו על מקש כלשהו כדי להמשיך.</span></p>
     `,
     data: { phase: 'inhibition_break', screen: 'instructions' }
   });
@@ -1005,14 +1005,18 @@ function blurAfter(trial, ms) {
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `
-      <h2>Delayed Recall</h2>
-      <p>Each trial shows <b>three faces</b>. You will be asked:</p>
+      <h2>Delayed Recall <br><span dir="rtl" style="font-size:0.85em;color:#444;">היזכרות מושהית</span></h2>
+      <p>Each trial shows <b>three faces</b>. You will be asked:<br>
+      <span dir="rtl" style="font-size:0.9em;color:#555;">בכל מסך יוצגו <b>שלושה פרצופים</b>. תתבקשו:</span></p>
       <ol style="text-align:left;display:inline-block;font-size:18px;line-height:2.2;">
-        <li>Which face have you <b>previously seen</b>?</li>
-        ${CFG.dr1stLetterMs > 0 ? `<li>What is the <b>first letter</b> of their name?</li>` : ''}
-        <li>What is their <b>full name</b>?</li>
+        <li>Which face have you <b>previously seen</b>?<br>
+        <span dir="rtl" style="font-size:0.9em;color:#555;">איזה מהפרצופים <b>ראיתם בעבר</b>?</span></li>
+        ${CFG.dr1stLetterMs > 0 ? `<li>What is the <b>first letter</b> of their name?<br>
+        <span dir="rtl" style="font-size:0.9em;color:#555;">מהי <b>האות הראשונה</b> בשמם?</span></li>` : ''}
+        <li>What is their <b>full name</b>?<br>
+        <span dir="rtl" style="font-size:0.9em;color:#555;">מהו <b>שמם המלא</b>?</span></li>
       </ol>
-      <p style="color:#888;">Press any key to begin.</p>
+      <p style="color:#888;">Press any key to begin.<br><span dir="rtl">לחצו על מקש כלשהו כדי להתחיל.</span></p>
     `
   });
 
@@ -1043,8 +1047,8 @@ function blurAfter(trial, ms) {
     choices: "NO_KEYS",
     stimulus() {
       if (!CFG.showStats) {
-        return `<h2>Task Complete!</h2>
-                <p style="color:#888;">Your results have been saved successfully. You may now close this window.</p>`;
+        return `<h2>Task Complete! <br><span dir="rtl" style="font-size:0.85em;color:#444;">המטלה הושלמה!</span></h2>
+                <p style="color:#888;">Your results have been saved successfully. You may now close this window.<br><span dir="rtl">התוצאות נשמרו בהצלחה. כעת תוכלו לסגור את החלון.</span></p>`;
       }
       const d  = jsPsych.data.get().filter({ phase: 'delayed_recall' });
       const n  = CFG.numStimuli * CFG.nDRRounds;
@@ -1052,16 +1056,16 @@ function blurAfter(trial, ms) {
       const q2 = d.filter({ question: 'Q2_first_letter', correct: true }).count();
       const q3 = d.filter({ question: 'Q3_full_name',    correct: true }).count();
       const q2Row = CFG.dr1stLetterMs > 0
-        ? `<tr><td>First letter:</td><td><b>${q2} / ${n}</b></td></tr>` : '';
+        ? `<tr><td>First letter:<br><span dir="rtl" style="font-size:0.85em;color:#555;">אות ראשונה:</span></td><td><b>${q2} / ${n}</b></td></tr>` : '';
       return `
-        <h2>Task Complete!</h2>
-        <h3 style="margin-top:20px;">Delayed Recall Summary</h3>
+        <h2>Task Complete! <br><span dir="rtl" style="font-size:0.85em;color:#444;">המטלה הושלמה!</span></h2>
+        <h3 style="margin-top:20px;">Delayed Recall Summary<br><span dir="rtl" style="font-size:0.85em;color:#444;">סיכום היזכרות מושהית</span></h3>
         <table style="margin:auto;font-size:20px;border-spacing:28px 10px;">
-          <tr><td>Familiar face:</td><td><b>${q1} / ${n}</b></td></tr>
+          <tr><td>Familiar face:<br><span dir="rtl" style="font-size:0.85em;color:#555;">פנים מוכרות:</span></td><td><b>${q1} / ${n}</b></td></tr>
           ${q2Row}
-          <tr><td>Full name:</td>    <td><b>${q3} / ${n}</b></td></tr>
+          <tr><td>Full name:<br><span dir="rtl" style="font-size:0.85em;color:#555;">שם מלא:</span></td>    <td><b>${q3} / ${n}</b></td></tr>
         </table>
-        <p style="color:#888;margin-top:28px;">Your results have been saved successfully. You may now close this window.</p>
+        <p style="color:#888;margin-top:28px;">Your results have been saved successfully. You may now close this window.<br><span dir="rtl">התוצאות נשמרו בהצלחה. כעת תוכלו לסגור את החלון.</span></p>
       `;
     }
   });
