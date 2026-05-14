@@ -994,13 +994,24 @@ function blurAfter(trial, ms) {
     timeline.push(stageOf(buildDelayedRecall(r)));
   }
 
+  // ── DataPipe save ────────────────────────────────────────────────────
+  timeline.push({
+    type: jsPsychPipe,
+    action: "save",
+    experiment_id: "MBiQMvsLAVF1",
+    filename: () => `fname_${jsPsych.randomization.randomID(8)}.csv`,
+    data_string: () => jsPsych.data.get().csv(),
+    //on_finish: () => jsPsych.data.get().localSave('csv', 'fname_results.csv')
+  });
+
   // End
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
+    choices: "NO_KEYS",
     stimulus() {
       if (!CFG.showStats) {
         return `<h2>Task Complete!</h2>
-                <p style="color:#888;">Press any key to save results as CSV.</p>`;
+                <p style="color:#888;">Your results have been saved successfully. You may now close this window.</p>`;
       }
       const d  = jsPsych.data.get().filter({ phase: 'delayed_recall' });
       const n  = CFG.numStimuli * CFG.nDRRounds;
@@ -1017,19 +1028,9 @@ function blurAfter(trial, ms) {
           ${q2Row}
           <tr><td>Full name:</td>    <td><b>${q3} / ${n}</b></td></tr>
         </table>
-        <p style="color:#888;margin-top:28px;">Press any key to save results as CSV.</p>
+        <p style="color:#888;margin-top:28px;">Your results have been saved successfully. You may now close this window.</p>
       `;
     }
-  });
-
-  // ── DataPipe save ────────────────────────────────────────────────────
-  timeline.push({
-    type: jsPsychPipe,
-    action: "save",
-    experiment_id: "MBiQMvsLAVF1",
-    filename: () => `fname_${jsPsych.randomization.randomID(8)}.csv`,
-    data_string: () => jsPsych.data.get().csv(),
-    on_finish: () => jsPsych.data.get().localSave('csv', 'fname_results.csv')
   });
 
   // ── 8. Run ──────────────────────────────────────────────────────────
