@@ -101,7 +101,7 @@ PRESETS:
         Time_1stLetter: 6
         Time_FullName: 6
     advanced: 
-        Name_Set: A
+        Name_Set: B
         Num_Of_Stimuli: 12
         Num_Learning_Rounds: 2
         Time_Per_Stimulus_Learning: 5
@@ -111,7 +111,7 @@ PRESETS:
         Time_1stLetter: 6
         Time_FullName: 6
     Shortest: 
-        Name_Set: A
+        Name_Set: C
         Num_Of_Stimuli: 8
         Num_Learning_Rounds: 2
         Time_Per_Stimulus_Learning: 4
