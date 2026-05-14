@@ -209,12 +209,28 @@ function blurAfter(trial, ms) {
   if (presetNames.length > 0) {
     chosenPreset = await new Promise(resolve => {
       const container = document.createElement('div');
-      container.style.cssText =
+      //container.style.cssText =
+      //  'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      //  'min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,sans-serif;';
+      //container.innerHTML = `
+      //  <h2 style="margin-bottom:8px;">Face–Name Memory Task</h2>
+      //  <p style="font-size:18px;color:#555;margin-bottom:28px;">Select a preset to begin:</p>
+      //  <div id="preset-buttons" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;"></div>
+      //`;
+            container.style.cssText =
         'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-        'min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,sans-serif;';
+        'min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,sans-serif; text-align:center;';
       container.innerHTML = `
-        <h2 style="margin-bottom:8px;">Face–Name Memory Task</h2>
-        <p style="font-size:18px;color:#555;margin-bottom:28px;">Select a preset to begin:</p>
+        <h2 style="margin-bottom:8px;">
+          Face–Name Memory Task
+          <br>
+          <span dir="rtl" style="font-size:0.85em; color:#444;">מטלת זיכרון פנים-שמות</span>
+        </h2>
+        <p style="font-size:18px;color:#555;margin-bottom:28px;">
+          Select a preset to begin:
+          <br>
+          <span dir="rtl">בחרו תצורה להתחיל:</span>
+        </p>
         <div id="preset-buttons" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;"></div>
       `;
       const btnBox = container.querySelector('#preset-buttons');
