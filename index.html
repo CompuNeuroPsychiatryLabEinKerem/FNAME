@@ -88,7 +88,7 @@ function buildCFG(y, presetName) {
   const breakInstruction = Array.isArray(rawBreak) ? rawBreak[0] : (rawBreak || '');
   const rawInhibBreak = y.INSTRUCTIONS && y.INSTRUCTIONS.Inhibition_Break;
   const inhibitionBreakIntro = Array.isArray(rawInhibBreak) ? rawInhibBreak[0]
-    : (rawInhibBreak || 'Before the next phase, we\'ll play a quick card game — two short rounds. Instructions will follow on the next screen.<br><span dir="rtl" style="font-size:0.9em;color:#555;">לפני השלב הבא, נשחק משחק קלפים מהיר — שני סיבובים קצרים. הוראות יופיעו במסך הבא.</span>');
+    : (rawInhibBreak || 'Before the next phase, we\'ll play a quick card game (that is not part of the memory test) — two short rounds. Instructions will follow on the next screen.<br><span dir="rtl" style="font-size:0.9em;color:#555;">לפני השלב הבא, נשחק משחק קלפים מהיר (שאינו חלק ממבחן הזיכרון) — שני סיבובים קצרים. הוראות יופיעו במסך הבא.</span>');
   const bg = (co.Break_Game) || {};
   const gameRounds         = bg.Num_Rounds        ?? 2;
   const gameStartScore     = bg.Start_Score       ?? 20;
@@ -226,6 +226,11 @@ function blurAfter(trial, ms) {
           <br>
           <span dir="rtl" style="font-size:0.85em; color:#444;">מטלת זיכרון פנים-שמות</span>
         </h2>
+        <p style="font-size:16px;color:#555;margin-bottom:18px;">
+          The test takes approximately 8 minutes. The standard edition is recommended.
+          <br>
+          <span dir="rtl">המבחן צפוי לארוך כ-8 דקות. מומלץ לבצע את הגרסה הסטנדרטית.</span>
+        </p>
         <p style="font-size:18px;color:#555;margin-bottom:28px;">
           Select a preset to begin:
           <br>
@@ -937,7 +942,7 @@ function blurAfter(trial, ms) {
   // Demographic/Questionnaire Stage
   timeline.push({
     type: jsPsychSurveyHtmlForm,
-    preamble: '<h3>Before we continue, please provide some background information:<br><span dir="rtl" style="font-weight:normal;font-size:0.9em;color:#555;">לפני שנמשיך, אנא ספקו כמה פרטי רקע:</span></h3>',
+    preamble: '<h3>Before we continue the test, please provide some background information:<br><span dir="rtl" style="font-weight:normal;font-size:0.9em;color:#555;">לפני שנמשיך במבחן, אנא ספקו כמה פרטי רקע:</span></h3>',
     html: `
       <div style="text-align: left; max-width: 400px; margin: 0 auto;">
         <p>
