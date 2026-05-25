@@ -543,7 +543,7 @@ function blurAfter(trial, ms) {
         if (skipContainer) skipContainer.style.display = 'none';
 
         iframeEl = document.createElement('iframe');
-        iframeEl.src = round === 1 ? 'Inhibition.html' : 'Inhibition.html?autostart=1';
+        iframeEl.src = 'Inhibition.html';
         iframeEl.style.cssText =
           'position:fixed;inset:0;width:100vw;height:100vh;border:none;z-index:10000;background:#000;';
         document.body.appendChild(iframeEl);
