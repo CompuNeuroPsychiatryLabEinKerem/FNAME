@@ -100,7 +100,7 @@ PRESETS:
         Time_IsFamiliar: 6
         Time_1stLetter: 6
         Time_FullName: 6
-    advanced: 
+    Advanced: 
         Name_Set: B
         Num_Of_Stimuli: 12
         Num_Learning_Rounds: 2
