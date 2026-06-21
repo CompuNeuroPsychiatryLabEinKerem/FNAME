@@ -222,6 +222,53 @@ function blurAfter(trial, ms) {
     return;
   }
 
+  // ── 1a. Language selection (blocking, first thing shown) ────────────
+  const LANG = await new Promise(resolve => {
+    const c = document.createElement('div');
+    c.style.cssText =
+      'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      'min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;gap:18px;';
+    c.innerHTML = '<h2 style="margin-bottom:4px;">Choose a language<br><span dir="rtl">בחרו שפה</span></h2>';
+    const mk = (label, code) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.style.cssText =
+        'font-size:22px;padding:14px 48px;border:2px solid #4a90e2;border-radius:8px;' +
+        'background:#fff;color:#4a90e2;cursor:pointer;font-weight:600;min-width:180px;';
+      b.addEventListener('click', () => { c.remove(); resolve(code); });
+      return b;
+    };
+    c.appendChild(mk('English', 'en'));
+    c.appendChild(mk('עברית', 'he'));
+    document.body.appendChild(c);
+  });
+
+  document.documentElement.lang = LANG;
+  document.documentElement.dir  = LANG === 'he' ? 'rtl' : 'ltr';
+
+  // Render only the chosen language. Bilingual markup is "English … <br>
+  // <span dir='rtl'>Hebrew</span>"; dropdown options are "English / Hebrew".
+  // Safe to call repeatedly (used on every rendered screen via MutationObserver).
+  function localize(root) {
+    if (!root) return;
+    root.querySelectorAll('[dir="rtl"]').forEach(el => {
+      if (LANG === 'en') {
+        const prev = el.previousSibling;
+        if (prev && prev.nodeName === 'BR') prev.remove();
+        el.remove();
+      } else {
+        // Hebrew chosen: drop the English siblings preceding this span, and the
+        // secondary (small/grey) styling so Hebrew reads as the primary text.
+        while (el.previousSibling) el.previousSibling.remove();
+        el.removeAttribute('style');
+      }
+    });
+    root.querySelectorAll('option').forEach(op => {
+      const parts = op.textContent.split(' / ');
+      if (parts.length === 2) op.textContent = (LANG === 'he') ? parts[1] : parts[0];
+    });
+  }
+
   // ── 1b. Preset selection (blocking, before jsPsych) ─────────────────
   const presetNames = yamlTree.PRESETS ? Object.keys(yamlTree.PRESETS) : [];
   let chosenPreset = null;
@@ -258,6 +305,7 @@ function blurAfter(trial, ms) {
         </p>
         <div id="preset-buttons" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;"></div>
       `;
+      localize(container);
       const btnBox = container.querySelector('#preset-buttons');
       for (const name of presetNames) {
         const btn = document.createElement('button');
@@ -394,21 +442,24 @@ function blurAfter(trial, ms) {
   }
   document.addEventListener('click', advanceOnTap);
 
-  // On touch devices, rewrite "Press any key / SPACE" hints to "Tap".
-  if (window.matchMedia('(pointer: coarse)').matches) {
-    const fixHints = root => {
-      root.querySelectorAll('p').forEach(p => {
-        if (/press\s+(any\s+key|space)/i.test(p.textContent) || /לחצו על מקש/.test(p.textContent)) {
-          p.innerHTML = p.innerHTML
-            .replace(/press\s+<b>\s*space\s*<\/b>/ig, '<b>Tap</b>')
-            .replace(/press\s+space/ig, 'Tap')
-            .replace(/press\s+any\s+key/ig, 'Tap')
-            .replace(/לחצו על מקש כלשהו/g, 'הקישו על המסך');
-        }
-      });
-    };
+  // Localize each rendered screen to the chosen language; on touch, also make
+  // "press a key" hints say "Tap".
+  const _isTouch = window.matchMedia('(pointer: coarse)').matches;
+  const fixHints = root => {
+    root.querySelectorAll('p').forEach(p => {
+      if (/press\s+(any\s+key|space)/i.test(p.textContent) || /לחצו על מקש/.test(p.textContent)) {
+        p.innerHTML = p.innerHTML
+          .replace(/press\s+<b>\s*space\s*<\/b>/ig, '<b>Tap</b>')
+          .replace(/press\s+space/ig, 'Tap')
+          .replace(/press\s+any\s+key/ig, 'Tap')
+          .replace(/לחצו על מקש כלשהו/g, 'הקישו על המסך');
+      }
+    });
+  };
+  {
     const dispEl = document.querySelector('.jspsych-display-element') || document.body;
-    new MutationObserver(() => fixHints(dispEl)).observe(dispEl, { childList: true, subtree: true });
+    const run = () => { localize(dispEl); if (_isTouch) fixHints(dispEl); };
+    new MutationObserver(run).observe(dispEl, { childList: true, subtree: true });
   }
 
   function skippable(trial) {
@@ -1086,7 +1137,7 @@ function blurAfter(trial, ms) {
         </p>
       </div>
     `,
-    button_label: 'Continue / המשך',
+    button_label: LANG === 'he' ? 'המשך' : 'Continue',
     on_finish: function(data) {
       // Saving to all subsequent and past CSV rows for easy analysis
       jsPsych.data.addProperties({
