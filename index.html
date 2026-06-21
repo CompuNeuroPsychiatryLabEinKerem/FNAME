@@ -338,13 +338,20 @@ function blurAfter(trial, ms) {
       filename: `fname_${SESSION_ID}_${order}_${phase}.csv`,
       data_string: () => jsPsych.data.get().csv()
     };
-    // Override the plugin's default "Saving data…" text when given a custom
-    // message (awkward on the first checkpoint, where nothing is saved yet).
+    // Optional custom "saving" text shown via a temporary full-screen overlay
+    // appended to <body> — NOT by rewriting jsPsych's display element (doing
+    // that clobbers the container jsPsych renders into and breaks later screens).
     if (loadingMsg) {
+      let overlay = null;
       t.on_load = () => {
-        const el = jsPsych.getDisplayElement();
-        if (el) el.innerHTML = loadingMsg;
+        overlay = document.createElement('div');
+        overlay.style.cssText =
+          'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;' +
+          'align-items:center;justify-content:center;text-align:center;padding:24px;';
+        overlay.innerHTML = loadingMsg;
+        document.body.appendChild(overlay);
       };
+      t.on_finish = () => { if (overlay) { overlay.remove(); overlay = null; } };
     }
     return t;
   }
@@ -972,8 +979,8 @@ function blurAfter(trial, ms) {
     `
   });
 
-  // Checkpoint 1: session started (custom message — nothing substantive yet)
-  timeline.push(saveCheckpoint(1, 'start',
+  // Checkpoint 0: session started — captures drop-out before any responses
+  timeline.push(saveCheckpoint(0, 'start',
     '<p style="font-size:18px;color:#555;">Getting started… &nbsp; <span dir="rtl">מתחילים…</span></p>'));
 
   // (Learning + Recall) × nLearningRounds
@@ -1029,8 +1036,8 @@ function blurAfter(trial, ms) {
     }
   }
 
-  // Checkpoint 2: learning + early recall done
-  timeline.push(saveCheckpoint(2, 'early_recall'));
+  // Checkpoint 1: learning + early recall done
+  timeline.push(saveCheckpoint(1, 'early_recall'));
 
   // Demographic/Questionnaire Stage
   timeline.push({
@@ -1093,8 +1100,8 @@ function blurAfter(trial, ms) {
     }
   });
 
-  // Checkpoint 3: demographics done
-  timeline.push(saveCheckpoint(3, 'demographics'));
+  // Checkpoint 2: demographics done
+  timeline.push(saveCheckpoint(2, 'demographics'));
 
   // Break – inhibition game (intro + 2 rounds with score screens)
   timeline.push({
@@ -1114,8 +1121,8 @@ function blurAfter(trial, ms) {
   timeline.push(buildInhibitionTrial(2));
   timeline.push(buildInhibitionScoreScreen(2));   // both scores + confetti + back to FNAME
 
-  // Checkpoint 4: inhibition done
-  timeline.push(saveCheckpoint(4, 'inhibition'));
+  // Checkpoint 3: inhibition done
+  timeline.push(saveCheckpoint(3, 'inhibition'));
 
   // Delayed Recall (intro absorbed into round-2 score screen; just begin)
   timeline.push({
@@ -1147,8 +1154,8 @@ function blurAfter(trial, ms) {
     timeline.push(stageOf(buildDelayedRecall(r)));
   }
 
-  // ── Checkpoint 5: final full record (late recall) ────────────────────
-  timeline.push(saveCheckpoint(5, 'late_recall'));
+  // ── Checkpoint 4: final full record (late recall) ────────────────────
+  timeline.push(saveCheckpoint(4, 'late_recall'));
 
   // End
   timeline.push({
