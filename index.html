@@ -393,6 +393,7 @@ function blurAfter(trial, ms) {
       let overlay = null;
       t.on_load = () => {
         overlay = document.createElement('div');
+        overlay.id = 'fname-save-overlay';
         overlay.style.cssText =
           'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;' +
           'align-items:center;justify-content:center;text-align:center;padding:24px;';
@@ -435,10 +436,19 @@ function blurAfter(trial, ms) {
   // ignore it. Dispatching from the tapped node lets the event bubble up to
   // jsPsych's listener wherever it lives (document or the display element).
   function advanceOnTap(e) {
+    if (document.getElementById('fname-save-overlay')) return;   // a checkpoint save is showing
     if (e.target.closest('button, input, textarea, select, a, label, .fname-key, .jspsych-slider')) return;
-    e.target.dispatchEvent(new KeyboardEvent('keydown', {
-      key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true
-    }));
+    const disp = jsPsych.getDisplayElement && jsPsych.getDisplayElement();
+    if (!disp) return;
+    // Only plain text screens (welcome, instructions, score, end) advance on a
+    // tap. Anything interactive/timed/special is excluded so it isn't cut short:
+    // buttons, form fields, the slider, the letter keyboard, face images
+    // (study/recall/delayed-recall), or the running card-game iframe.
+    if (disp.querySelector(
+      '.jspsych-btn, input, select, textarea, .jspsych-slider, .fname-key,' +
+      ' .face-img, .face-img-large, .face-img-small')) return;
+    if (document.querySelector('iframe')) return;                // card game running
+    try { jsPsych.finishTrial({ rt: null, tap_advanced: true }); } catch (_) {}
   }
   document.addEventListener('click', advanceOnTap);
 
