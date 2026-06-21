@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Inhibition Task</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
   <style>
@@ -9,7 +10,8 @@
     body {
       background: #000; color: #fff;
       font-family: 'Segoe UI', Arial, sans-serif;
-      overflow: hidden; width: 100vw; height: 100vh; user-select: none;
+      overflow: hidden; width: 100vw; height: 100dvh; user-select: none;
+      touch-action: manipulation;   /* no double-tap zoom / 300ms delay */
     }
 
     /* ── Score bar ─────────────────────────────────────────────── */
@@ -128,6 +130,18 @@
     #end-hz-label { font-size: 13px; color: #777; letter-spacing: 2px; margin-bottom: 20px; }
     #end-details  { font-size: 15px; color: #888; margin-top: 14px; text-align: center; }
     #end-details strong { color: #ccc; }
+
+    /* ── Mobile fit ─────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .panel       { padding: 16px; }
+      .panel h1    { font-size: clamp(24px,7vw,42px); margin-bottom: 18px; }
+      .info-box    { font-size: 15px; padding: 18px 20px; line-height: 1.6; }
+      #game-title  { display: none; }            /* reclaim score-bar width */
+      #score-value { font-size: 28px; }
+      #sparkline   { width: 130px; }
+      #end-score-big { font-size: clamp(48px,16vw,80px); }
+      .btn         { padding: 14px 40px; }        /* keep a big tap target */
+    }
   </style>
 </head>
 <body>
@@ -166,7 +180,7 @@
   <h1>Quick Reaction Card Game</h1>
   <div class="info-box">
     <p>Two animal cards appear side by side.</p><br>
-    <p>Press <span class="key">SPACE</span> only when both cards show the
+    <p><strong>Tap the screen</strong> (or press <span class="key">SPACE</span>) only when both cards show the
        <strong>same animal</strong> and both are <strong>right-side up</strong>.</p><br>
     <p>Each trial lasts <strong>1.5 s</strong>. The session lasts <strong>60 s</strong>.</p><br>
     <p><strong>Beware of pairs showing the same animal with one card sneakily flipped upside down — they are <em>almost</em> right... but only almost. Mwahahaha.</strong></p>
@@ -347,6 +361,16 @@ async function preprocessImages() {
   cfg.Display.CardWidth  = Math.round(maxW * scale);
   cfg.Display.CardHeight = Math.round(maxH * scale);
 
+  // Shrink to fit small screens: two cards sit at 33%/67%, so each must stay
+  // well under a third of the width; also cap height to the play area.
+  const availW = window.innerWidth * 0.30;
+  const availH = (window.innerHeight - cfg.Display.ScoreAreaHeight - 8) * 0.60;
+  const fit = Math.min(1, availW / cfg.Display.CardWidth, availH / cfg.Display.CardHeight);
+  if (fit < 1) {
+    cfg.Display.CardWidth  = Math.round(cfg.Display.CardWidth  * fit);
+    cfg.Display.CardHeight = Math.round(cfg.Display.CardHeight * fit);
+  }
+
   const cvs = document.createElement('canvas');
   cvs.width = maxW; cvs.height = maxH;
   const ctx = cvs.getContext('2d');
@@ -477,13 +501,24 @@ function endGame() {
   }
 }
 
-// ── Input ──────────────────────────────────────────────────────────────────
+// ── Input (SPACE on desktop, tap anywhere on mobile) ────────────────────────
+function respond() {
+  // currentTrial guard: ignore presses during the Ready-Set-Go countdown
+  if (!gameRunning || responded || !currentTrial) return;
+  responded = true;
+  endTrial(true);
+}
 document.addEventListener('keydown', e => {
   if (e.code !== 'Space') return;
   e.preventDefault();
-  if (!gameRunning || responded) return;
-  responded = true;
-  endTrial(true);
+  respond();
+});
+// Tap anywhere in the play area = respond. Ignore taps on the Start/Play-Again
+// buttons so they keep their own behaviour.
+document.addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  e.preventDefault();
+  respond();
 });
 
 // ── Ready-Set-Go countdown ─────────────────────────────────────────────────

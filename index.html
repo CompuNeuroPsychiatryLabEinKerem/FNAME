@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>FNAME Task</title>
   <script src="https://unpkg.com/jspsych@7.3.4"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
@@ -22,23 +23,31 @@
       box-shadow: 0 4px 14px rgba(0,0,0,.4); letter-spacing: .5px;
     }
     #skip-btn:hover { background: #ca6f1e; }
-    .face-img       { width:200px; height:250px; object-fit:cover; border-radius:8px;
+    .face-img       { width:min(200px,55vw); aspect-ratio:4/5; height:auto; object-fit:cover; border-radius:8px;
                       display:block; margin:0 auto 14px; transition: filter 0.3s; }
-    .face-img-large { width:170px; height:210px; object-fit:cover; border-radius:8px;
+    .face-img-large { width:min(170px,27vw); aspect-ratio:17/21; height:auto; object-fit:cover; border-radius:8px;
                       transition: filter 0.3s; }
-    .face-img-small { width:130px; height:160px; object-fit:cover; border-radius:8px;
+    .face-img-small { width:min(130px,42vw); aspect-ratio:13/16; height:auto; object-fit:cover; border-radius:8px;
                       display:block; margin:0 auto 14px; transition: filter 0.3s; }
     .face-blurred   { filter: blur(20px) brightness(0.7); }
     /* ── Alphabet keyboard (Delayed Recall Q2) ──────────────────────── */
     .fname-keyboard  { margin-top: 16px; }
-    .fname-kb-row    { display:flex; justify-content:center; gap:8px; margin:4px 0; }
+    .fname-kb-row    { display:flex; justify-content:center; flex-wrap:wrap; gap:clamp(3px,1vw,8px); margin:4px 0; }
     .fname-key {
-      width:48px; height:48px; font-size:17px; font-weight:bold;
+      width:clamp(26px,8.2vw,48px); height:clamp(34px,9vw,48px);
+      font-size:clamp(13px,3.6vw,17px); font-weight:bold;
       border:2px solid #999; border-radius:6px; background:#fff;
       cursor:pointer; box-sizing:border-box;
     }
     .fname-key:hover    { background:#dce8ff; border-color:#4a90e2; }
     .fname-key.selected { background:#4a90e2; color:#fff; border-color:#2c6db5; }
+    /* ── Mobile fit ─────────────────────────────────────────────────── */
+    .jspsych-content { max-width:100%; box-sizing:border-box; padding:0 10px; }
+    .jspsych-content img { max-width:100%; }
+    #jspsych-html-button-response-btngroup {
+      display:flex; flex-wrap:wrap; justify-content:center; gap:10px;
+    }
+    .jspsych-btn { max-width:100%; }
   </style>
 </head>
 
@@ -226,11 +235,6 @@ function blurAfter(trial, ms) {
           <br>
           <span dir="rtl" style="font-size:0.85em; color:#444;">מטלת זיכרון פנים-שמות</span>
         </h2>
-        <p style="font-size:16px;color:#d9534f;margin-bottom:8px;">
-          <strong>This test only works on a computer</strong>
-          <br>
-          <span dir="rtl"><strong>המבחן עובד רק על מחשב</strong></span>
-        </p>
         <p style="font-size:16px;color:#555;margin-bottom:18px;">
           The test takes approximately 8 minutes. The standard edition is recommended.
           <br>
@@ -285,8 +289,15 @@ function blurAfter(trial, ms) {
   //  on_finish: () => jsPsych.data.get().localSave('csv', 'fname_results.csv')});
 	const jsPsych = initJsPsych({ on_finish: () => {} });
 
+  // One id per run, shared across all phase checkpoint files (see saveCheckpoint).
+  const SESSION_ID  = jsPsych.randomization.randomID(10);
+  const _params     = new URLSearchParams(window.location.search);
+  const PARTICIPANT = _params.get('pid') || _params.get('participant') || '';
+
   // Write resolved config to every row of CSV output
   jsPsych.data.addProperties({
+    cfg_session_id:      SESSION_ID,
+    cfg_participant:     PARTICIPANT,
     cfg_preset:          CFG.presetName,
     cfg_name_set:        CFG.nameSet,
     cfg_num_stimuli:     CFG.numStimuli,
@@ -299,6 +310,24 @@ function blurAfter(trial, ms) {
     cfg_dr_fullname_ms:  CFG.drFullNameMs,
     cfg_keyboard:        CFG.keyboard
   });
+
+  // ── Per-phase cumulative checkpoint saves (resilient to drop-out) ─────
+  // Each checkpoint saves ALL data collected so far to its own DataPipe file,
+  // grouped by SESSION_ID and numbered by phase order. Because every file is
+  // cumulative, a participant's highest-numbered file already contains every
+  // earlier phase — so to reconstruct them you just keep that latest file
+  // (combining is optional). If a run is abandoned, the last checkpoint that
+  // ran still holds everything up to that point.
+  const DATAPIPE_ID = "MBiQMvsLAVF1";
+  function saveCheckpoint(order, phase) {
+    return {
+      type: jsPsychPipe,
+      action: "save",
+      experiment_id: DATAPIPE_ID,
+      filename: `fname_${SESSION_ID}_${order}_${phase}.csv`,
+      data_string: () => jsPsych.data.get().csv()
+    };
+  }
 
   // Move skip button inside jsPsych's display element
   const _jsPsychRoot = document.querySelector('.jspsych-display-element') || document.body;
@@ -322,6 +351,36 @@ function blurAfter(trial, ms) {
     skipStageFlag = true;
     try { jsPsych.finishTrial({ skipped: true, rt: null }); } catch (_) {}
   });
+
+  // ── Tap-to-advance (mobile) ─────────────────────────────────────────
+  // "Press any key / SPACE" screens have no keyboard on a phone. Let a tap
+  // advance them — but ONLY keyboard-response screens waiting for a key.
+  // choices:'NO_KEYS' screens (timed study faces, the Q2 letter keyboard) and
+  // button/slider/survey trials are a different plugin type, so they're untouched.
+  function advanceOnTap(e) {
+    if (e.target.closest('button, input, textarea, select, .fname-key, .jspsych-slider')) return;
+    const t = jsPsych.getCurrentTrial();
+    if (t && t.type === jsPsychHtmlKeyboardResponse && t.choices !== 'NO_KEYS') {
+      try { jsPsych.finishTrial({ rt: null, tap_advanced: true }); } catch (_) {}
+    }
+  }
+  document.addEventListener('click', advanceOnTap);
+
+  // On touch devices, rewrite "Press any key / SPACE" hints to "Tap".
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    const fixHints = root => {
+      root.querySelectorAll('p').forEach(p => {
+        if (/press\s+(any\s+key|space)/i.test(p.textContent)) {
+          p.innerHTML = p.innerHTML
+            .replace(/press\s+<b>\s*space\s*<\/b>/i, '<b>Tap</b>')
+            .replace(/press\s+space/i, 'Tap')
+            .replace(/press\s+any\s+key/i, 'Tap');
+        }
+      });
+    };
+    const dispEl = document.querySelector('.jspsych-display-element') || document.body;
+    new MutationObserver(() => fixHints(dispEl)).observe(dispEl, { childList: true, subtree: true });
+  }
 
   function skippable(trial) {
     const origLoad = trial.on_load;
@@ -377,7 +436,7 @@ function blurAfter(trial, ms) {
           `,
           labels: ['No Way<br><span dir="rtl">בכלל לא</span>', 'Meh<br><span dir="rtl">ככה-ככה</span>', 'Perfect<br><span dir="rtl">מושלם</span>'],
           min: -1, max: 1, start: 0, step: 0.01,
-          require_movement: true, slider_width: 420,
+          require_movement: true, slider_width: Math.min(420, window.innerWidth - 48),
           data: { phase: 'learning', screen: 'rating', round, name }
         }));
       }
@@ -589,7 +648,7 @@ function blurAfter(trial, ms) {
           return `
             <div style="text-align:center;font-family:inherit;max-width:560px;margin:0 auto;">
               <h2 style="font-size:36px;margin-bottom:8px;">Round 1 Complete!</h2>
-              <div style="font-size:80px;font-weight:700;color:#f0d060;line-height:1.1;margin:16px 0;">
+              <div style="font-size:clamp(48px,16vw,80px);font-weight:700;color:#f0d060;line-height:1.1;margin:16px 0;">
                 ${fmtScore(s1)}
               </div>
               <p style="font-size:14px;color:#888;letter-spacing:1px;margin-bottom:28px;">
@@ -608,14 +667,14 @@ function blurAfter(trial, ms) {
           return `
             <div style="text-align:center;font-family:inherit;max-width:580px;margin:0 auto;">
               <h2 style="font-size:36px;margin-bottom:24px;">Round 2 Complete!</h2>
-              <div style="display:flex;justify-content:center;gap:48px;margin-bottom:12px;">
+              <div style="display:flex;justify-content:center;gap:clamp(20px,8vw,48px);margin-bottom:12px;">
                 <div>
                   <div style="font-size:13px;color:#888;letter-spacing:1px;margin-bottom:6px;">ROUND 1</div>
-                  <div style="font-size:60px;font-weight:700;color:#aad4ff;line-height:1;">${fmtScore(s1)}</div>
+                  <div style="font-size:clamp(36px,12vw,60px);font-weight:700;color:#aad4ff;line-height:1;">${fmtScore(s1)}</div>
                 </div>
                 <div>
                   <div style="font-size:13px;color:#888;letter-spacing:1px;margin-bottom:6px;">ROUND 2</div>
-                  <div style="font-size:60px;font-weight:700;color:#f0d060;line-height:1;">${fmtScore(s2)}</div>
+                  <div style="font-size:clamp(36px,12vw,60px);font-weight:700;color:#f0d060;line-height:1;">${fmtScore(s2)}</div>
                 </div>
               </div>
               ${improved ? `<p style="font-size:18px;color:#6bcb77;margin-bottom:20px;">${improved}</p>` : ''}
@@ -891,6 +950,9 @@ function blurAfter(trial, ms) {
     `
   });
 
+  // Checkpoint 1: session started
+  timeline.push(saveCheckpoint(1, 'start'));
+
   // (Learning + Recall) × nLearningRounds
   for (let r = 1; r <= CFG.nLearningRounds; r++) {
 
@@ -943,6 +1005,9 @@ function blurAfter(trial, ms) {
       });
     }
   }
+
+  // Checkpoint 2: learning + early recall done
+  timeline.push(saveCheckpoint(2, 'early_recall'));
 
   // Demographic/Questionnaire Stage
   timeline.push({
@@ -1005,6 +1070,9 @@ function blurAfter(trial, ms) {
     }
   });
 
+  // Checkpoint 3: demographics done
+  timeline.push(saveCheckpoint(3, 'demographics'));
+
   // Break – inhibition game (intro + 2 rounds with score screens)
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
@@ -1022,6 +1090,9 @@ function blurAfter(trial, ms) {
   timeline.push(buildInhibitionScoreScreen(1));   // score + confetti + "go again"
   timeline.push(buildInhibitionTrial(2));
   timeline.push(buildInhibitionScoreScreen(2));   // both scores + confetti + back to FNAME
+
+  // Checkpoint 4: inhibition done
+  timeline.push(saveCheckpoint(4, 'inhibition'));
 
   // Delayed Recall (intro absorbed into round-2 score screen; just begin)
   timeline.push({
@@ -1053,15 +1124,8 @@ function blurAfter(trial, ms) {
     timeline.push(stageOf(buildDelayedRecall(r)));
   }
 
-  // ── DataPipe save ────────────────────────────────────────────────────
-  timeline.push({
-    type: jsPsychPipe,
-    action: "save",
-    experiment_id: "MBiQMvsLAVF1",
-    filename: () => `fname_${jsPsych.randomization.randomID(8)}.csv`,
-    data_string: () => jsPsych.data.get().csv(),
-    //on_finish: () => jsPsych.data.get().localSave('csv', 'fname_results.csv')
-  });
+  // ── Checkpoint 5: final full record (late recall) ────────────────────
+  timeline.push(saveCheckpoint(5, 'late_recall'));
 
   // End
   timeline.push({
