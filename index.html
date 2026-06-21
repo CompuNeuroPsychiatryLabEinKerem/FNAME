@@ -330,14 +330,23 @@ function blurAfter(trial, ms) {
   // (combining is optional). If a run is abandoned, the last checkpoint that
   // ran still holds everything up to that point.
   const DATAPIPE_ID = "MBiQMvsLAVF1";
-  function saveCheckpoint(order, phase) {
-    return {
+  function saveCheckpoint(order, phase, loadingMsg) {
+    const t = {
       type: jsPsychPipe,
       action: "save",
       experiment_id: DATAPIPE_ID,
       filename: `fname_${SESSION_ID}_${order}_${phase}.csv`,
       data_string: () => jsPsych.data.get().csv()
     };
+    // Override the plugin's default "Saving data…" text when given a custom
+    // message (awkward on the first checkpoint, where nothing is saved yet).
+    if (loadingMsg) {
+      t.on_load = () => {
+        const el = jsPsych.getDisplayElement();
+        if (el) el.innerHTML = loadingMsg;
+      };
+    }
+    return t;
   }
 
   // Move skip button inside jsPsych's display element
@@ -382,11 +391,12 @@ function blurAfter(trial, ms) {
   if (window.matchMedia('(pointer: coarse)').matches) {
     const fixHints = root => {
       root.querySelectorAll('p').forEach(p => {
-        if (/press\s+(any\s+key|space)/i.test(p.textContent)) {
+        if (/press\s+(any\s+key|space)/i.test(p.textContent) || /לחצו על מקש/.test(p.textContent)) {
           p.innerHTML = p.innerHTML
-            .replace(/press\s+<b>\s*space\s*<\/b>/i, '<b>Tap</b>')
-            .replace(/press\s+space/i, 'Tap')
-            .replace(/press\s+any\s+key/i, 'Tap');
+            .replace(/press\s+<b>\s*space\s*<\/b>/ig, '<b>Tap</b>')
+            .replace(/press\s+space/ig, 'Tap')
+            .replace(/press\s+any\s+key/ig, 'Tap')
+            .replace(/לחצו על מקש כלשהו/g, 'הקישו על המסך');
         }
       });
     };
@@ -962,8 +972,9 @@ function blurAfter(trial, ms) {
     `
   });
 
-  // Checkpoint 1: session started
-  timeline.push(saveCheckpoint(1, 'start'));
+  // Checkpoint 1: session started (custom message — nothing substantive yet)
+  timeline.push(saveCheckpoint(1, 'start',
+    '<p style="font-size:18px;color:#555;">Getting started… &nbsp; <span dir="rtl">מתחילים…</span></p>'));
 
   // (Learning + Recall) × nLearningRounds
   for (let r = 1; r <= CFG.nLearningRounds; r++) {
