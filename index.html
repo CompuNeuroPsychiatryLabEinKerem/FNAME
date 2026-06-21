@@ -48,6 +48,17 @@
       display:flex; flex-wrap:wrap; justify-content:center; gap:10px;
     }
     .jspsych-btn { max-width:100%; }
+    /* ── Mobile: shrink instruction text so it fits one screen ───────── */
+    @media (max-width: 600px) {
+      .jspsych-content    { font-size:15px; padding-top:10px; padding-bottom:24px; }
+      .jspsych-content h2 { font-size:20px; margin:6px 0; }
+      .jspsych-content h3 { font-size:17px; }
+      .jspsych-content p  { line-height:1.4; margin:8px 0; }
+      .jspsych-content ol,
+      .jspsych-content ul { font-size:14px !important; line-height:1.5 !important; padding-left:18px; }
+      /* long screens scroll from the top instead of being clipped by centering */
+      .jspsych-content-wrapper { align-items:flex-start !important; }
+    }
   </style>
 </head>
 
@@ -353,16 +364,17 @@ function blurAfter(trial, ms) {
   });
 
   // ── Tap-to-advance (mobile) ─────────────────────────────────────────
-  // "Press any key / SPACE" screens have no keyboard on a phone. Let a tap
-  // advance them — but ONLY keyboard-response screens waiting for a key.
-  // choices:'NO_KEYS' screens (timed study faces, the Q2 letter keyboard) and
-  // button/slider/survey trials are a different plugin type, so they're untouched.
+  // "Press any key / SPACE" screens have no keyboard on a phone. A tap dispatches
+  // a synthetic Space keypress, and jsPsych applies it through its own logic:
+  // keyboard-response screens that accept keys advance, while NO_KEYS screens
+  // (timed study faces, the Q2 letter keyboard) and button/slider/survey trials
+  // ignore it. Dispatching from the tapped node lets the event bubble up to
+  // jsPsych's listener wherever it lives (document or the display element).
   function advanceOnTap(e) {
-    if (e.target.closest('button, input, textarea, select, .fname-key, .jspsych-slider')) return;
-    const t = jsPsych.getCurrentTrial();
-    if (t && t.type === jsPsychHtmlKeyboardResponse && t.choices !== 'NO_KEYS') {
-      try { jsPsych.finishTrial({ rt: null, tap_advanced: true }); } catch (_) {}
-    }
+    if (e.target.closest('button, input, textarea, select, a, label, .fname-key, .jspsych-slider')) return;
+    e.target.dispatchEvent(new KeyboardEvent('keydown', {
+      key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true
+    }));
   }
   document.addEventListener('click', advanceOnTap);
 
