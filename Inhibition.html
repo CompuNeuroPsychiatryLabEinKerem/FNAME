@@ -223,6 +223,10 @@ const DEFAULT_CONFIG = {
 let cfg = DEFAULT_CONFIG;
 let processedImages = {};
 
+// ── Language (passed from the parent page via ?lang=he) ─────────────────────
+const GAME_LANG = (new URLSearchParams(location.search).get('lang') === 'he') ? 'he' : 'en';
+const gt = (en, he) => GAME_LANG === 'he' ? he : en;
+
 // ── Game state ─────────────────────────────────────────────────────────────
 let gameRunning    = false;
 let trialTimer     = null;
@@ -325,7 +329,7 @@ function updateScoreDisplay() {
   scoreHistory.push({ elapsed, score: s });
 
   if (s !== null) {
-    scoreVal.textContent = s.toFixed(2);
+    scoreVal.textContent = Math.round(s * 60);   // show ×60 ("Score"); raw stays in data
     scoreVal.className   = '';
   } else {
     scoreVal.textContent = '—';
@@ -525,9 +529,9 @@ document.addEventListener('pointerdown', e => {
 function showCountdown(callback) {
   const el = document.getElementById('countdown');
   const steps = [
-    { text: 'Ready', color: '#ff9944' },
-    { text: 'Set',   color: '#ffdd44' },
-    { text: 'Go!',   color: '#44dd88' },
+    { text: gt('Ready', 'מוכנים'), color: '#ff9944' },
+    { text: gt('Set',   'היכון'),  color: '#ffdd44' },
+    { text: gt('Go!',   'קדימה!'), color: '#44dd88' },
   ];
   let i = 0;
   function next() {
@@ -572,6 +576,23 @@ function applyCfg() {
   document.getElementById('score-bar').style.height = cfg.Display.ScoreAreaHeight + 'px';
 }
 
+// ── Localize the game to the chosen language ────────────────────────────────
+function applyGameLang() {
+  document.documentElement.lang = GAME_LANG;
+  document.documentElement.dir  = GAME_LANG === 'he' ? 'rtl' : 'ltr';
+  document.getElementById('score-label').textContent = gt('Score', 'ניקוד');   // drop "(Hz)"
+  document.getElementById('game-title').textContent  = gt('Card Game', 'משחק קלפים');
+  if (GAME_LANG === 'he') {
+    document.querySelector('#start-screen h1').textContent =
+      'לפניך משחק קלפים המבוסס על מהירות תגובה';
+    document.querySelector('#start-screen .info-box').innerHTML =
+      '<p>בכל קלף מופיעה חיה וכל קלף יכול להיות מונח בכיוון נכון או הפוך.</p><br>' +
+      '<p>מטרתכם לזהות, ע"י הקשה על המסך או על מקש הרווח, זוגות שבהם הקלפים מציגים את אותה החיה ושניהם בכיוון הנכון, ולעשות זאת מהר ככל האפשר ועם כמה שפחות טעויות.</p><br>' +
+      '<p>כל הצגה נמשכת <strong>1.5 שניות</strong>. המשחק כולו נמשך <strong>60 שניות</strong>.</p><br>' +
+      '<p><strong>היזהרו מזוגות שבהם מופיעה אותה החיה אך אחד הקלפים הפוך בעורמה — הם <em>כמעט</em> נכונים... אבל רק כמעט. מוּאהאהאה!</strong></p>';
+  }
+}
+
 // ── Load config + preprocess images ───────────────────────────────────────
 async function init() {
   try {
@@ -581,16 +602,17 @@ async function init() {
   } catch (_) { console.info('Using built-in default config.'); }
 
   applyCfg();
+  applyGameLang();
 
   const btn = document.getElementById('start-btn');
-  btn.disabled = true; btn.textContent = 'Loading images…';
+  btn.disabled = true; btn.textContent = gt('Loading images…', 'טוען תמונות…');
   await preprocessImages();
 
   if (new URLSearchParams(window.location.search).get('autostart') !== null) {
     document.getElementById('start-screen').style.display = 'none';
     startGame();
   } else {
-    btn.disabled = false; btn.textContent = 'Start';
+    btn.disabled = false; btn.textContent = gt('Start', 'התחלה');
   }
 }
 
