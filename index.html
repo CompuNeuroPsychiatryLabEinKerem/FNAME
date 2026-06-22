@@ -62,6 +62,12 @@
       .jspsych-html-slider-response-container { max-width:84vw !important; }
       body { overflow-x:hidden; }
     }
+    /* ── Hebrew (RTL) alignment ─────────────────────────────────────── */
+    html[dir="rtl"] .jspsych-content { text-align: right; }
+    html[dir="rtl"] .jspsych-content [style*="text-align: left"],
+    html[dir="rtl"] .jspsych-content [style*="text-align:left"] { text-align: right !important; }
+    html[dir="rtl"] .jspsych-content ol,
+    html[dir="rtl"] .jspsych-content ul { padding-right: 1.2em; padding-left: 0; }
   </style>
 </head>
 
@@ -778,7 +784,7 @@ function blurAfter(trial, ms) {
               ${improved ? `<p style="font-size:18px;color:#6bcb77;margin-bottom:20px;">${improved}</p>` : ''}
               <p style="font-size:20px;color:#ccc;line-height:1.7;max-width:460px;margin:24px auto 32px;">
                 ${t("Now, back to our face recognition game.<br>Press SPACE when you're ready.",
-                     "זוכרים את הפרצופים מקודם? הנה מגיע סיבוב נוסף ואחרון.<br>הקישו על המסך כשתהיו מוכנים.")}
+                     "זוכרים את הפנים והשמות מקודם? הנה מגיע סיבוב נוסף ואחרון.<br>הקישו על המסך כשתהיו מוכנים.")}
               </p>
               <p style="color:#888;font-size:16px;">${t('Press <b>SPACE</b> to continue', 'הקישו על המסך כדי להמשיך')}</p>
             </div>`;

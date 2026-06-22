@@ -131,9 +131,13 @@
     #end-details  { font-size: 15px; color: #888; margin-top: 14px; text-align: center; }
     #end-details strong { color: #ccc; }
 
+    /* Hebrew (RTL) instructions align right */
+    html[dir="rtl"] .info-box { text-align: right; }
+
     /* ── Mobile fit ─────────────────────────────────────────────────── */
     @media (max-width: 600px) {
       .panel       { padding: 16px; }
+      #countdown   { font-size: clamp(52px,15vw,160px); }
       .panel h1    { font-size: clamp(24px,7vw,42px); margin-bottom: 18px; }
       .info-box    { font-size: 15px; padding: 18px 20px; line-height: 1.6; }
       #game-title  { display: none; }            /* reclaim score-bar width */
@@ -529,9 +533,9 @@ document.addEventListener('pointerdown', e => {
 function showCountdown(callback) {
   const el = document.getElementById('countdown');
   const steps = [
-    { text: gt('Ready', 'מוכנים'), color: '#ff9944' },
-    { text: gt('Set',   'היכון'),  color: '#ffdd44' },
-    { text: gt('Go!',   'קדימה!'), color: '#44dd88' },
+    { text: gt('Ready', 'למקומות'), color: '#ff9944' },
+    { text: gt('Set',   'היכון'),   color: '#ffdd44' },
+    { text: gt('Go!',   'צא'),      color: '#44dd88' },
   ];
   let i = 0;
   function next() {
