@@ -31,7 +31,7 @@
                       display:block; margin:0 auto 14px; transition: filter 0.3s; }
     .face-blurred   { filter: blur(20px) brightness(0.7); }
     /* ── Alphabet keyboard (Delayed Recall Q2) ──────────────────────── */
-    .fname-keyboard  { margin-top: 16px; }
+    .fname-keyboard  { margin-top: 16px; direction: ltr; }  /* keep keys LTR even in Hebrew (RTL) mode */
     .fname-kb-row    { display:flex; justify-content:center; flex-wrap:wrap; gap:clamp(3px,1vw,8px); margin:4px 0; }
     .fname-key {
       width:clamp(26px,8.2vw,48px); height:clamp(34px,9vw,48px);
