@@ -1232,14 +1232,13 @@ function blurAfter(trial, ms) {
   // ── Checkpoint 4: final full record (late recall) ────────────────────
   timeline.push(saveCheckpoint(4, 'late_recall'));
 
-  // End
+  // End — Delayed Recall summary (now advanceable; leads to optional feedback)
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
-    choices: "NO_KEYS",
     stimulus() {
       if (!CFG.showStats) {
         return `<h2>Task Complete! <br><span dir="rtl" style="font-size:0.85em;color:#444;">המטלה הושלמה!</span></h2>
-                <p style="color:#888;">Your results have been saved successfully. You may now close this window.<br><span dir="rtl">התוצאות נשמרו בהצלחה. כעת תוכלו לסגור את החלון.</span></p>`;
+                <p style="color:#888;">Your results have been saved successfully.<br>Press any key to continue.<br><span dir="rtl">התוצאות נשמרו בהצלחה. לחצו על מקש כלשהו כדי להמשיך.</span></p>`;
       }
       const d  = jsPsych.data.get().filter({ phase: 'delayed_recall' });
       const n  = CFG.numStimuli * CFG.nDRRounds;
@@ -1256,9 +1255,81 @@ function blurAfter(trial, ms) {
           ${q2Row}
           <tr><td>Full name:<br><span dir="rtl" style="font-size:0.85em;color:#555;">שם מלא:</span></td>    <td><b>${q3} / ${n}</b></td></tr>
         </table>
-        <p style="color:#888;margin-top:28px;">Your results have been saved successfully. You may now close this window.<br><span dir="rtl">התוצאות נשמרו בהצלחה. כעת תוכלו לסגור את החלון.</span></p>
+        <p style="color:#888;margin-top:28px;">Your results have been saved successfully.<br>Press any key to continue.<br><span dir="rtl">התוצאות נשמרו בהצלחה. לחצו על מקש כלשהו כדי להמשיך.</span></p>
       `;
     }
+  });
+
+  // ── Optional free-text feedback ─────────────────────────────────────
+  // Saved to its OWN DataPipe file (feedback_<SESSION_ID>.csv) that holds only
+  // the comment + session id + timestamp — the free text is never bundled into
+  // the cumulative task-data CSVs. Entirely optional: the Skip button submits an
+  // empty comment and, in that case, no feedback file is written.
+  let FEEDBACK_TEXT = '';
+  timeline.push({
+    type: jsPsychSurveyHtmlForm,
+    preamble:
+      `<h2>Feedback <br><span dir="rtl" style="font-size:0.85em;color:#444;">משוב</span></h2>
+       <p style="font-size:18px;max-width:560px;margin:8px auto 6px;line-height:1.6;">
+         This is the place to comment / give feedback on your experience.
+         <b>This is optional</b> — you can simply press Skip.
+         <br><span dir="rtl" style="font-size:0.95em;color:#555;">כאן המקום להערות והארות. שלב זה הוא רשות — ניתן פשוט לדלג.</span>
+       </p>`,
+    html:
+      `<div style="max-width:560px;margin:0 auto;">
+         <textarea name="comment" rows="5"
+           style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:16px;font-family:inherit;box-sizing:border-box;"></textarea>
+       </div>`,
+    button_label: t('Submit', 'שליחה'),
+    on_load() {
+      const form = document.getElementById('jspsych-survey-html-form');
+      const submitBtn = document.getElementById('jspsych-survey-html-form-next');
+      if (form && submitBtn && !document.getElementById('fname-fb-skip')) {
+        const skip = document.createElement('button');
+        skip.id = 'fname-fb-skip';
+        skip.type = 'button';
+        skip.className = 'jspsych-btn';
+        skip.style.marginInlineStart = '12px';
+        skip.textContent = t('No, thank you!', 'תודה רבה, אין צורך');
+        skip.addEventListener('click', () => {
+          const ta = form.querySelector('[name="comment"]');
+          if (ta) ta.value = '';
+          if (form.requestSubmit) form.requestSubmit();
+          else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        });
+        submitBtn.insertAdjacentElement('afterend', skip);
+      }
+    },
+    on_finish(data) {
+      FEEDBACK_TEXT = ((data.response && data.response.comment) || '').trim();
+      data.phase = 'feedback';
+      data.has_comment = FEEDBACK_TEXT.length > 0;
+    }
+  });
+
+  // Save the comment to its own file — only when the participant wrote something.
+  timeline.push({
+    timeline: [{
+      type: jsPsychPipe,
+      action: "save",
+      experiment_id: DATAPIPE_ID,
+      filename: `feedback_${SESSION_ID}.csv`,
+      data_string: () => {
+        const esc = s => `"${String(s).replace(/"/g, '""')}"`;
+        return 'session_id,participant,timestamp,comment\n' +
+          [SESSION_ID, PARTICIPANT, new Date().toISOString(), FEEDBACK_TEXT].map(esc).join(',');
+      }
+    }],
+    conditional_function: () => FEEDBACK_TEXT.length > 0
+  });
+
+  // ── Final thank-you (no interaction) ────────────────────────────────
+  timeline.push({
+    type: jsPsychHtmlKeyboardResponse,
+    choices: "NO_KEYS",
+    stimulus:
+      `<h2>Thank you for your help! <br><span dir="rtl" style="font-size:0.85em;color:#444;">תודה רבה על עזרתכם!</span></h2>
+       <p style="color:#888;margin-top:20px;">You may now close this window.<br><span dir="rtl">כעת תוכלו לסגור את החלון.</span></p>`
   });
 
   // ── 8. Run ──────────────────────────────────────────────────────────
