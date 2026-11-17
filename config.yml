@@ -94,8 +94,8 @@ PRESETS:
         Name_Set: A
         Num_Of_Stimuli: 12
         Num_Learning_Rounds: 2
-        Time_Per_Stimulus_Learning: 8
-        Time_Per_Stimulus_Recall: 8
+        Time_Per_Stimulus_Learning: 4
+        Time_Per_Stimulus_Recall: 6
         Num_DelayedRecall_Rounds: 2
         Time_IsFamiliar: 6
         Time_1stLetter: 6
@@ -104,8 +104,8 @@ PRESETS:
         Name_Set: B
         Num_Of_Stimuli: 12
         Num_Learning_Rounds: 2
-        Time_Per_Stimulus_Learning: 5
-        Time_Per_Stimulus_Recall: 5
+        Time_Per_Stimulus_Learning: 3
+        Time_Per_Stimulus_Recall: 4
         Num_DelayedRecall_Rounds: 2
         Time_IsFamiliar: 6
         Time_1stLetter: 6
