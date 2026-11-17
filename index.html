@@ -9,8 +9,10 @@
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.3"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-call-function@1.1.3"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-  <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe@0.4.0/dist/index.browser.min.js"></script>
+  <!-- DataPipe disabled for now (OSF storage ended Nov 16, 2026). Re-enable together with DATAPIPE_ENABLED below. -->
+  <!-- <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe@0.4.0/dist/index.browser.min.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css">
   <style>
@@ -232,6 +234,8 @@ function blurAfter(trial, ms) {
   }
 
   // ── 1a. Language selection (blocking, first thing shown) ────────────
+  // Also holds the opt-out for the automatic local CSV download (checked = download).
+  let LOCAL_DOWNLOAD = true;
   const LANG = await new Promise(resolve => {
     const c = document.createElement('div');
     c.style.cssText =
@@ -244,11 +248,24 @@ function blurAfter(trial, ms) {
       b.style.cssText =
         'font-size:22px;padding:14px 48px;border:2px solid #4a90e2;border-radius:8px;' +
         'background:#fff;color:#4a90e2;cursor:pointer;font-weight:600;min-width:180px;';
-      b.addEventListener('click', () => { c.remove(); resolve(code); });
+      b.addEventListener('click', () => {
+        LOCAL_DOWNLOAD = document.getElementById('fname-local-dl').checked;
+        c.remove();
+        resolve(code);
+      });
       return b;
     };
     c.appendChild(mk('English', 'en'));
     c.appendChild(mk('עברית', 'he'));
+    const dl = document.createElement('label');
+    dl.style.cssText =
+      'margin-top:22px;font-size:15px;color:#555;display:flex;align-items:flex-start;' +
+      'gap:10px;max-width:420px;text-align:start;cursor:pointer;line-height:1.5;';
+    dl.innerHTML =
+      '<input type="checkbox" id="fname-local-dl" checked style="width:18px;height:18px;margin-top:3px;flex:none;">' +
+      '<span>Download a copy of the results (CSV) to this computer at the end' +
+      '<br><span dir="rtl" style="display:block;">הורדת עותק של התוצאות (CSV) למחשב זה בסיום המטלה</span></span>';
+    c.appendChild(dl);
     document.body.appendChild(c);
   });
 
@@ -377,7 +394,8 @@ function blurAfter(trial, ms) {
     cfg_dr_familiar_ms:  CFG.drFamiliarMs,
     cfg_dr_1stletter_ms: CFG.dr1stLetterMs,
     cfg_dr_fullname_ms:  CFG.drFullNameMs,
-    cfg_keyboard:        CFG.keyboard
+    cfg_keyboard:        CFG.keyboard,
+    cfg_local_download:  LOCAL_DOWNLOAD
   });
 
   // ── Per-phase cumulative checkpoint saves (resilient to drop-out) ─────
@@ -387,32 +405,96 @@ function blurAfter(trial, ms) {
   // earlier phase — so to reconstruct them you just keep that latest file
   // (combining is optional). If a run is abandoned, the last checkpoint that
   // ran still holds everything up to that point.
-  const DATAPIPE_ID = "MBiQMvsLAVF1";
-  function saveCheckpoint(order, phase, loadingMsg) {
-    const t = {
-      type: jsPsychPipe,
-      action: "save",
-      experiment_id: DATAPIPE_ID,
-      filename: `fname_${SESSION_ID}_${order}_${phase}.csv`,
-      data_string: () => jsPsych.data.get().csv()
-    };
-    // Optional custom "saving" text shown via a temporary full-screen overlay
-    // appended to <body> — NOT by rewriting jsPsych's display element (doing
-    // that clobbers the container jsPsych renders into and breaks later screens).
-    if (loadingMsg) {
-      let overlay = null;
-      t.on_load = () => {
+  //
+  // DataPipe is DISABLED for now: DataPipe stopped writing to OSF on
+  // Nov 16, 2026, so the only copy of the data is the local CSV download.
+  // To re-enable: connect a new storage provider on pipe.jspsych.org, put the
+  // new experiment ID in DATAPIPE_ID, set DATAPIPE_ENABLED = true, and
+  // uncomment the plugin-pipe <script> tag in <head>.
+  const DATAPIPE_ENABLED = false;
+  const DATAPIPE_ID = "MBiQMvsLAVF1";   // old OSF-backed experiment — no longer delivers
+  const PIPE_TIMEOUT_MS = 10000;
+
+  // Upload to DataPipe/OSF without ever blocking the task. The stock
+  // jsPsychPipe trial hangs forever on its spinner if the server returns a
+  // non-JSON error page (its response.json() throws and the trial never
+  // finishes), so we call its static saveData() ourselves with a timeout and
+  // treat any failure as "not uploaded" — the run continues either way.
+  async function pipeSave(filename, dataString) {
+    if (!DATAPIPE_ENABLED) return { success: false, error: 'DataPipe disabled' };
+    if (typeof jsPsychPipe === 'undefined' || !jsPsychPipe.saveData) {
+      return { success: false, error: 'DataPipe plugin not loaded' };
+    }
+    try {
+      const result = await Promise.race([
+        jsPsychPipe.saveData(DATAPIPE_ID, filename, dataString),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), PIPE_TIMEOUT_MS))
+      ]);
+      const ok = !!result && !(result instanceof Error) && !result.error;
+      const error = ok ? '' : String((result && (result.error || result.message)) || result);
+      if (!ok) console.warn(`DataPipe save failed (${filename}):`, error);
+      return { success: ok, error };
+    } catch (e) {
+      console.warn(`DataPipe save failed (${filename}):`, e);
+      return { success: false, error: String((e && e.message) || e) };
+    }
+  }
+
+  // Trigger a browser download of a text file (used when LOCAL_DOWNLOAD is on).
+  function downloadText(filename, text) {
+    try {
+      const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = filename; a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
+    } catch (e) { console.warn('Local download failed:', e); }
+  }
+  const LOCAL_FILE_TAG = `${PARTICIPANT ? PARTICIPANT + '_' : ''}${SESSION_ID}`;
+
+  // `opts.download` = also save this checkpoint's CSV to the computer
+  // (only if the participant left the opening-screen checkbox ticked).
+  function saveCheckpoint(order, phase, loadingMsg, opts = {}) {
+    const filename = `fname_${SESSION_ID}_${order}_${phase}.csv`;
+    // "Saving" text shown via a temporary full-screen overlay appended to
+    // <body> — NOT by rewriting jsPsych's display element (doing that
+    // clobbers the container jsPsych renders into and breaks later screens).
+    const msg = loadingMsg ||
+      `<p style="font-size:18px;color:#555;">${t('Saving data… please do not close this page.', 'שומרים נתונים… נא לא לסגור את הדף.')}</p>`;
+    let overlay = null;
+    const trial = {
+      type: jsPsychCallFunction,
+      async: true,
+      func: (done) => {
         overlay = document.createElement('div');
         overlay.id = 'fname-save-overlay';
         overlay.style.cssText =
           'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;' +
           'align-items:center;justify-content:center;text-align:center;padding:24px;';
-        overlay.innerHTML = loadingMsg;
+        overlay.innerHTML = msg;
         document.body.appendChild(overlay);
-      };
-      t.on_finish = () => { if (overlay) { overlay.remove(); overlay = null; } };
-    }
-    return t;
+
+        const csv = jsPsych.data.get().csv();
+        if (opts.download && LOCAL_DOWNLOAD) downloadText(`fname_${LOCAL_FILE_TAG}.csv`, csv);
+        pipeSave(filename, csv).then(done);
+      },
+      on_finish: (data) => {
+        if (overlay) { overlay.remove(); overlay = null; }
+        data.phase       = 'save_checkpoint';
+        data.checkpoint  = `${order}_${phase}`;
+        data.success     = data.value.success;
+        data.pipe_error  = data.value.error;
+        delete data.value;
+      }
+    };
+    // With DataPipe off, upload-only checkpoints are skipped entirely (no
+    // "saving" screen flashes); the download checkpoint still runs.
+    return {
+      timeline: [trial],
+      conditional_function: () => DATAPIPE_ENABLED || (opts.download && LOCAL_DOWNLOAD)
+    };
   }
 
   // Move skip button inside jsPsych's display element
@@ -1230,15 +1312,21 @@ function blurAfter(trial, ms) {
   }
 
   // ── Checkpoint 4: final full record (late recall) ────────────────────
-  timeline.push(saveCheckpoint(4, 'late_recall'));
+  // Also downloads the full CSV locally (unless opted out on the opening screen).
+  timeline.push(saveCheckpoint(4, 'late_recall', null, { download: true }));
 
   // End — Delayed Recall summary (now advanceable; leads to optional feedback)
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
     stimulus() {
+      // Only claim the results were saved when the local download actually ran
+      // (DataPipe is disabled, so the download is the only copy).
+      const endNote = LOCAL_DOWNLOAD
+        ? `A copy of your results was downloaded to this computer.<br>Press any key to continue.<br><span dir="rtl">עותק של התוצאות הורד למחשב זה. לחצו על מקש כלשהו כדי להמשיך.</span>`
+        : `Press any key to continue.<br><span dir="rtl">לחצו על מקש כלשהו כדי להמשיך.</span>`;
       if (!CFG.showStats) {
         return `<h2>Task Complete! <br><span dir="rtl" style="font-size:0.85em;color:#444;">המטלה הושלמה!</span></h2>
-                <p style="color:#888;">Your results have been saved successfully.<br>Press any key to continue.<br><span dir="rtl">התוצאות נשמרו בהצלחה. לחצו על מקש כלשהו כדי להמשיך.</span></p>`;
+                <p style="color:#888;">${endNote}</p>`;
       }
       const d  = jsPsych.data.get().filter({ phase: 'delayed_recall' });
       const n  = CFG.numStimuli * CFG.nDRRounds;
@@ -1255,7 +1343,7 @@ function blurAfter(trial, ms) {
           ${q2Row}
           <tr><td>Full name:<br><span dir="rtl" style="font-size:0.85em;color:#555;">שם מלא:</span></td>    <td><b>${q3} / ${n}</b></td></tr>
         </table>
-        <p style="color:#888;margin-top:28px;">Your results have been saved successfully.<br>Press any key to continue.<br><span dir="rtl">התוצאות נשמרו בהצלחה. לחצו על מקש כלשהו כדי להמשיך.</span></p>
+        <p style="color:#888;margin-top:28px;">${endNote}</p>
       `;
     }
   });
@@ -1308,16 +1396,23 @@ function blurAfter(trial, ms) {
   });
 
   // Save the comment to its own file — only when the participant wrote something.
+  // Uploaded to DataPipe and, if local download is on, also saved to the computer.
   timeline.push({
     timeline: [{
-      type: jsPsychPipe,
-      action: "save",
-      experiment_id: DATAPIPE_ID,
-      filename: `feedback_${SESSION_ID}.csv`,
-      data_string: () => {
+      type: jsPsychCallFunction,
+      async: true,
+      func: (done) => {
         const esc = s => `"${String(s).replace(/"/g, '""')}"`;
-        return 'session_id,participant,timestamp,comment\n' +
+        const csv = 'session_id,participant,timestamp,comment\n' +
           [SESSION_ID, PARTICIPANT, new Date().toISOString(), FEEDBACK_TEXT].map(esc).join(',');
+        if (LOCAL_DOWNLOAD) downloadText(`feedback_${LOCAL_FILE_TAG}.csv`, csv);
+        pipeSave(`feedback_${SESSION_ID}.csv`, csv).then(done);
+      },
+      on_finish: (data) => {
+        data.phase      = 'save_feedback';
+        data.success    = data.value.success;
+        data.pipe_error = data.value.error;
+        delete data.value;
       }
     }],
     conditional_function: () => FEEDBACK_TEXT.length > 0
